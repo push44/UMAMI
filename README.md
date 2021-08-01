@@ -1,5 +1,5 @@
 ## Uncertainty Managed Access to Microstructures Interface Project
-To run this project on your machine open your terminal and type following commands
+To run replicate this project we open commandline terminal and type following
 ```
 $git clone https://github.com/push44/UMAMI.git
 $cd UMAMI
@@ -8,14 +8,19 @@ $mkdir input
 $cd src
 $touch config.py
 ```
-At this point you have to provide URL, USERNAME, and PASSWORD in config.py file.<br>
+At this point we have to put url address, username, and password in the config.py file.<br>
 For example,
 ```
 URL = "www.google.com"
 USERNAME = "username"
 PASSWORD = "password"
 ```
-Now you are all set to start a server and run app.py. Again open the terminal and type following
+Now we are all set to run get.py file by following command in the terminal
+```
+$python get.py
+```
+This script extracts data from the url address and stores it into the input folder.<br>
+Now we are ready run run app.py. Again open the terminal and type following
 ```
 $python app.py
 ```
