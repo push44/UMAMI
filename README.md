@@ -4,7 +4,7 @@ To run this project on your machine open your terminal and type following comman
 $git clone https://github.com/push44/UMAMI.git
 $cd UMAMI
 $pip install -r requirements.txt
-$mkdir Input
+$mkdir input
 $cd src
 $touch config.py
 ```

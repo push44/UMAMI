@@ -69,7 +69,7 @@ def main(schema_file, data_file):
         fig = px.scatter(dataframe, x=xaxis_column_name, y=yaxis_column_name)
         return fig
 
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
 if __name__ == "__main__":
     main(config.SCHEMA_FILE, config.DATA_FILE)
