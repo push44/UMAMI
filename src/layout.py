@@ -6,7 +6,65 @@ import dash_core_components as dcc
 
 def thresholds(df, x, y, lb_x, ub_x, lb_y, ub_y):
     """Returns updated dataframe after thresholding for scatter plot"""
-    new_df = df[(df[x]>=lb_x) & (df[x]<=ub_x) & (df[y]>=lb_y) & (df[y]<=ub_y)]
+
+    ################## Zero non-None ##################
+    if lb_x==None and ub_x==None and lb_y==None and ub_y==None:
+        new_df = df
+
+    ################## One non-None ##################
+    elif lb_x!=None and ub_x==None and lb_y==None and ub_y==None:
+        new_df = df[df[x]>=lb_x]
+
+    elif lb_x==None and ub_x!=None and lb_y==None and ub_y==None:
+        new_df = df[df[x]<=ub_x]
+
+    elif lb_x==None and ub_x==None and lb_y!=None and ub_y==None:
+        new_df = df[df[y]>=lb_y]
+
+    elif lb_x==None and ub_x==None and lb_y==None and ub_y!=None:
+        new_df = df[df[y]<=ub_y]
+
+    ################## Two non-None ##################
+    # lb_x = non-None
+    elif lb_x!=None and ub_x!=None and lb_y==None and ub_y==None:
+        new_df = df[(df[x]>=lb_x) & (df[x]<=ub_x)]
+
+    elif lb_x!=None and ub_x==None and lb_y!=None and ub_y==None:
+        new_df = df[(df[x]>=lb_x) & (df[y]>=lb_y)]
+
+    elif lb_x!=None and ub_x==None and lb_y==None and ub_y!=None:
+        new_df = df[(df[x]>=lb_x) & (df[y]<=ub_y)]
+
+    # ub_x = non-None
+    elif lb_x==None and ub_x!=None and lb_y!=None and ub_y==None:
+        new_df = df[(df[x]<=ub_x) & (df[y]>=lb_y)]
+
+    elif lb_x==None and ub_x!=None and lb_y==None and ub_y!=None:
+        new_df = df[(df[x]<=ub_x) & (df[y]<=ub_y)]
+
+    # lb_y = non-None
+    elif lb_x==None and ub_x==None and lb_y!=None and ub_y!=None:
+        new_df = df[(df[y]>=lb_y) & (df[y]<=ub_y)]
+
+    ################## Three non-None ##################
+    # lb_x = non-None
+    elif lb_x!=None and ub_x!=None and lb_y!=None and ub_y==None:
+        new_df = df[(df[x]>=lb_x) & (df[x]<=ub_x) & (df[y]>=lb_y)]
+
+    elif lb_x!=None and ub_x!=None and lb_y==None and ub_y!=None:
+        new_df = df[(df[x]>=lb_x) & (df[x]<=ub_x) & (df[y]<=ub_y)]
+
+    elif lb_x!=None and ub_x==None and lb_y!=None and ub_y!=None:
+        new_df = df[(df[x]>=lb_x) & (df[y]>=lb_y) & (df[y]<=ub_y)]
+
+    # ub_x = non-None
+    elif lb_x==None and ub_x!=None and lb_y!=None and ub_y!=None:
+        new_df = df[(df[x]<=ub_x) & (df[y]>=lb_y) & (df[y]<=ub_y)]
+
+    ################## Four(All) non-None ##################
+    else:
+        new_df = df[(df[x]>=lb_x) & (df[x]<=ub_x) & (df[y]>=lb_y) & (df[y]<=ub_y)]
+
     return new_df
 
 def create_input(input_id, input_placeholder):
@@ -147,8 +205,20 @@ def create_layout(features):
     )
     ################## Table Object ##################
     table_object = dash_table.DataTable(
-        id="table-id",
-        columns = [{"name": i, "id": i} for i in ["Features", "Out-of-range-values"]]
+        id = "table-id",
+        columns = [{"name": i, "id": i} for i in ["Features", "Out-of-range-values"]],
+        style_table={
+            "width":"30%",
+        },
+        style_cell = {
+            "text_align": "left",
+            "font_size": "14px"
+        },
+        style_header = {
+            "text_align": "left",
+            "font_size": "16px",
+            "font_weight": "bold"
+        }
     )
     
     table_div = html.Div(
