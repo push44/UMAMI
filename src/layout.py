@@ -1,6 +1,7 @@
 import dash_table
 
 import pandas as pd
+import numpy as np
 import dash_html_components as html
 import dash_core_components as dcc
 
@@ -73,8 +74,8 @@ def create_input(input_id, input_placeholder):
                 id=input_id,
                 type="number",
                 placeholder=input_placeholder,
-                min=-1001,
-                max=1001,
+                min=-np.inf,
+                max=np.inf,
                 style={"width":"30%"}
             )
 
@@ -95,54 +96,91 @@ def create_dropdown_div(input_id, default_value, lb, ub, dropdown_list):
             style = {"display":"inline-flex"}
         )
 
-def create_new_dropdown_div(click_event, dropdown_list):
+def create_new_dropdown_div(click_event, dropdown_list, add_filter=True):
     """Returns dropdown object indexed according to click event (number of clicks)
     for adding new filter when one is selected"""
-    new_dropdown = dcc.Dropdown(
-            id={
-                "type": "filter-dropdown",
-                "index": click_event
-            },
-            options=[{"label":i, "value":i} for i in dropdown_list],
-            style={"width":"60%"}
-        )
+    if add_filter:
+        # Create new_dropdown for add filter
+        new_dropdown = dcc.Dropdown(
+                id={
+                    "type": "filter-dropdown-add",
+                    "index": click_event
+                },
+                options=[{"label":i, "value":i} for i in dropdown_list],
+                style={"width":"60%"}
+            )
 
-    new_lb = create_input({"type":"number", "index": click_event}, "Lower Bound")
-    new_ub = create_input({"type":"number", "index": click_event}, "Upper Bound")
+        new_lb = create_input({"type":"number", "index": click_event}, "Lower Bound")
+        new_ub = create_input({"type":"number", "index": click_event}, "Upper Bound")
 
-    return html.Div(
-            [
-                    html.Div(
-                        [
-                            new_dropdown,
-                            new_lb,
-                            new_ub
-                        ],
-                        style = {"display":"inline-flex"}
-                )
-            ],
-            style={"display":"grid"}
-        )
+        return html.Div(
+                [
+                        html.Div(
+                            [
+                                new_dropdown,
+                                new_lb,
+                                new_ub
+                            ],
+                            style = {"display":"inline-flex"}
+                    )
+                ],
+                style={"display":"grid"}
+            )
+    else:
+        # Create new_dropdown for remove filter
+        new_dropdown = dcc.Dropdown(
+                id={
+                    "type": "filter-dropdown-remove",
+                    "index": click_event
+                },
+                options=[{"label":i, "value":i} for i in dropdown_list],
+                style={"width":"60%"}
+            )
 
-def create_table_df(dataframe, clicks, features, bounds):
+        return html.Div(
+                [
+                        html.Div(
+                            [
+                                new_dropdown,
+                            ],
+                            style = {"display":"inline-flex"}
+                    )
+                ],
+                style={"display":"grid"}
+            )
+
+def create_table_df(dataframe, clicks, add_features, bounds, remove_features):
     """Returns pandas dataframe of feature names and number of out of bounds values"""
     dataframe = dataframe.drop(["case_name", "source"], axis=1)
     table_df = pd.DataFrame({
         "Features": dataframe.columns,
         "Out-of-range-values": [0]*len(dataframe.columns)
     })
-    if clicks>0:
-        data = dict(zip(table_df["Features"].values, table_df["Out-of-range-values"].values))
-        for ind, feat in enumerate(features):
-            lb, ub = bounds[ind]
-            data[feat] = dataframe[(dataframe[feat]<lb) | (dataframe[feat]>ub)].shape[0]
 
+    # Enter if click event (add filter) has occured at least once
+    if clicks>0:
+
+        data = dict(zip(table_df["Features"].values, table_df["Out-of-range-values"].values))
+
+        # add_features receives None when remove_filter has occured at least once
+        if add_features[-1]==None:
+            add_features.pop(-1)
+
+        # Iterate over features to be added
+        for ind, feat in enumerate(add_features):
+            # Avoid if feature is also must be removed
+            if not feat in remove_features:
+                lb, ub = bounds[ind]
+                data[feat] = dataframe[(dataframe[feat]<lb) | (dataframe[feat]>ub)].shape[0]
+
+        # Convert to dataframe
         table_df = pd.DataFrame({
             "Features": list(data.keys()),
             "Out-of-range-values": list(data.values())
         })
 
-    table_df.sort_values("Out-of-range-values", inplace=True, ascending=False)
+        table_df.sort_values("Out-of-range-values", inplace=True, ascending=False)
+
     return table_df
 
 def create_layout(features):
@@ -190,19 +228,31 @@ def create_layout(features):
     )
 
     ################## Adding Filters ##################
+    add_filter_div = html.Div(
+        children=[
+            html.Button("Add Filter", id="add-filter", n_clicks=0),
+            html.Div(id="dropdown-container", children=[])
+        ]
+    )
+
+    ################## Removing Filters ##################
+    remove_filter_div = html.Div(
+        children=[
+            html.Button("Remove Filter", id="remove-filter", n_clicks=0),
+            html.Div(id="dropdown-container-remove", children=[])
+        ]
+    )
+
     filter_div = html.Div(
         children=[
             html.H2(
-                children="Filters"
+                children="Add/ Remove Filters"
             ),
-            html.P(
-                children="To remove filter click add filter with bounds -1000 and 1000."
-            ),
-            html.Button("Add Filter", id="add-filter", n_clicks=0),
-            html.Div(id="dropdown-container", children=[]),
-            html.Div(id="empty-output")
+            add_filter_div,
+            remove_filter_div
         ]
     )
+
     ################## Table Object ##################
     table_object = dash_table.DataTable(
         id = "table-id",

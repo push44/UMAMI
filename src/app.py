@@ -55,7 +55,7 @@ def main(dataframe):
         return fig
 
 
-    ############################## Update Dropdown ##############################
+    ############################## Update Dropdown (Add filter) ##############################
     # Initiate empty-dropdown after every click event (n_clicks type) by
     # component_id = add-filter.
     @app.callback(
@@ -72,26 +72,49 @@ def main(dataframe):
 
         return dropdown_children_state
 
-    ############################## Update Table ##############################
+    ############################## Update Dropdown (Remove filter) ##############################
+    # Initiate empty-dropdown after every click event (n_clicks type) by
+    # component_id = add-filter.
+    @app.callback(
+        Output("dropdown-container-remove", "children"),
+        Input("remove-filter", "n_clicks"),
+        State("dropdown-container-remove", "children")
+    )
+    def display_dropdown(button_click, dropdown_children_state):
+        # If click event has occured then create new dropdown menue to add next filter
+        # These dropdown menues are indexed over button_click (click event number)
+        new_dropdown_div = create_new_dropdown_div(button_click, dataframe.columns[2:], False)
+        # Return list of dropdown objects (In sequence)
+        dropdown_children_state.append(new_dropdown_div)
+
+        return dropdown_children_state
+
+    ############################## Update Table (Add filter) ##############################
     # Initialize table to count out-of-range-values
     # Update table (sort by out-of-range-values desc) immediately after 
     # click event has occured
     @app.callback(
         Output("table-id", "data"),
         Input("add-filter", "n_clicks"),
-        State({'type': 'filter-dropdown', 'index': ALL}, 'value'),
+        Input("remove-filter", "n_clicks"),
+        State({'type': 'filter-dropdown-add', 'index': ALL}, 'value'),
+        State({'type': 'filter-dropdown-remove', 'index': ALL}, 'value'),
         State({'type': 'number', 'index': ALL}, 'value')
     )
-    def on_click(number_of_times_button_has_clicked, filter_dropdown_state, filter_limits_state):
-        selected_features = filter_dropdown_state
-        selected_bounds = np.array(filter_limits_state).reshape(-1, 2)
+    def on_add_click(add_filter_n_clicks, remove_filter_n_clicks, add_filter_dropdown_state, remove_filter_dropdown_state, limits_state):
+
+        add_filter_features = add_filter_dropdown_state
+        selected_bounds = np.array(limits_state).reshape(-1, 2)
+        remove_filter_features = remove_filter_dropdown_state
         # Create table to be rendered
         table_df = create_table_df(
             dataframe,
-            number_of_times_button_has_clicked,
-            selected_features,
-            selected_bounds
+            add_filter_n_clicks,
+            add_filter_features,
+            selected_bounds,
+            remove_filter_features
         )
+
         return table_df.to_dict("records")
 
     app.run_server(debug=True)

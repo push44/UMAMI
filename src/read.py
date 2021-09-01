@@ -21,4 +21,3 @@ def read(schema_file, data_file):
         content[name] = list(data[:, ind])
 
     return pd.DataFrame(content)
-
