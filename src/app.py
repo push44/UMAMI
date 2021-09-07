@@ -1,5 +1,6 @@
 import config
 import dash
+import urllib.parse
 import plotly.express as px
 import numpy as np
 
@@ -95,6 +96,8 @@ def main(dataframe):
     # click event has occured
     @app.callback(
         Output("table-id", "data"),
+        Output("table-head-id", "data"),
+        Output("download-link", "href"),
         Input("add-filter", "n_clicks"),
         Input("remove-filter", "n_clicks"),
         State({'type': 'filter-dropdown-add', 'index': ALL}, 'value'),
@@ -107,7 +110,7 @@ def main(dataframe):
         selected_bounds = np.array(limits_state).reshape(-1, 2)
         remove_filter_features = remove_filter_dropdown_state
         # Create table to be rendered
-        table_df = create_table_df(
+        table_df, new_df = create_table_df(
             dataframe,
             add_filter_n_clicks,
             add_filter_features,
@@ -115,7 +118,12 @@ def main(dataframe):
             remove_filter_features
         )
 
-        return table_df.to_dict("records")
+        csv_string = new_df.to_csv(index=False, encoding="utf-8")
+        csv_string = "data:text/csv;charset=utf-8,%EF%BB%BF" + urllib.parse.quote(csv_string)
+   
+        # Shuffle dataframe
+        new_df = new_df.sample(frac=1)
+        return table_df.to_dict("records"), new_df.head(10).to_dict("records"), csv_string
 
     app.run_server(debug=True)
 

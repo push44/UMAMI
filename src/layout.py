@@ -151,7 +151,13 @@ def create_new_dropdown_div(click_event, dropdown_list, add_filter=True):
 
 def create_table_df(dataframe, clicks, add_features, bounds, remove_features):
     """Returns pandas dataframe of feature names and number of out of bounds values"""
+    # Copy dataframe to a new variable (To store changed/ or new dataframe)
+    new_df = dataframe.copy(deep=True)
+
+    # Drop features that are not required for out of range table
     dataframe = dataframe.drop(["case_name", "source"], axis=1)
+
+    # Initialse a dataframe with zero out of range values (since no filter is selected)
     table_df = pd.DataFrame({
         "Features": dataframe.columns,
         "Out-of-range-values": [0]*len(dataframe.columns)
@@ -160,9 +166,10 @@ def create_table_df(dataframe, clicks, add_features, bounds, remove_features):
     # Enter if click event (add filter) has occured at least once
     if clicks>0:
 
+        # Initialize a data dictionary to store out of range values per feature
         data = dict(zip(table_df["Features"].values, table_df["Out-of-range-values"].values))
 
-        # add_features receives None when remove_filter has occured at least once
+        # add_features receives a None value when remove_filter has occured at least once
         if add_features[-1]==None:
             add_features.pop(-1)
 
@@ -172,6 +179,16 @@ def create_table_df(dataframe, clicks, add_features, bounds, remove_features):
             if not feat in remove_features:
                 lb, ub = bounds[ind]
                 data[feat] = dataframe[(dataframe[feat]<lb) | (dataframe[feat]>ub)].shape[0]
+                
+                # new_df that meets the criterias
+                if lb==None:
+                    new_df = new_df[new_df[feat]<ub]
+                elif ub==None:
+                    new_df = new_df[new_df[feat]>lb]
+                elif lb==None and ub==None:
+                    pass
+                else:
+                    new_df = new_df[(new_df[feat]>lb) & (new_df[feat]<ub)]
 
         # Convert to dataframe
         table_df = pd.DataFrame({
@@ -179,9 +196,10 @@ def create_table_df(dataframe, clicks, add_features, bounds, remove_features):
             "Out-of-range-values": list(data.values())
         })
 
+        # Sort the table according to out of range values
         table_df.sort_values("Out-of-range-values", inplace=True, ascending=False)
-
-    return table_df
+        
+    return table_df, new_df
 
 def create_layout(features):
     """
@@ -199,14 +217,18 @@ def create_layout(features):
     )
 
     ################## Scatter Plot ##################
+
+    # Create bound inputs
     lb_x = create_input("lbx", "Lower Bound")
     lb_y = create_input("lby", "Lower Bound")
     ub_x = create_input("ubx", "Upper Bound")
     ub_y = create_input("uby", "Upper Bound")
 
+    # Create dropdowns for x and y axis of the scatter plot
     x_dropdown_div = create_dropdown_div("xaxis-column","ABS_wf_D", lb_x, ub_x, features[2:])
     y_dropdown_div = create_dropdown_div("yaxis-column", "STAT_CC_D", lb_y, ub_y, features[2:])
 
+    # Dropdown div
     dropdown_div = html.Div(
         children=[
             x_dropdown_div,
@@ -215,8 +237,10 @@ def create_layout(features):
         style={"display":"grid"}
     )
 
+    # Scatter plot object
     graph_object = dcc.Graph(id='indicator-graphic')
 
+    # Scatter plot div with dropdowns
     scatter_plot_div = html.Div(
         children=[
             html.H2(
@@ -227,7 +251,9 @@ def create_layout(features):
         ]
     )
 
-    ################## Adding Filters ##################
+    ################## Add/ Remove Filters ##################
+
+    # Adding Filters
     add_filter_div = html.Div(
         children=[
             html.Button("Add Filter", id="add-filter", n_clicks=0),
@@ -235,7 +261,7 @@ def create_layout(features):
         ]
     )
 
-    ################## Removing Filters ##################
+    # Removing Filters
     remove_filter_div = html.Div(
         children=[
             html.Button("Remove Filter", id="remove-filter", n_clicks=0),
@@ -243,6 +269,7 @@ def create_layout(features):
         ]
     )
 
+    # Adding/ Removing filter div
     filter_div = html.Div(
         children=[
             html.H2(
@@ -253,7 +280,7 @@ def create_layout(features):
         ]
     )
 
-    ################## Table Object ##################
+    ################## Table Object (Out of range table) ##################
     table_object = dash_table.DataTable(
         id = "table-id",
         columns = [{"name": i, "id": i} for i in ["Features", "Out-of-range-values"]],
@@ -271,6 +298,7 @@ def create_layout(features):
         }
     )
     
+    # Out of range table div
     table_div = html.Div(
             children=[
                 html.H2(
@@ -280,11 +308,38 @@ def create_layout(features):
             ]
         )
 
+    ################## Table Object (Sample table after filter/s) ##################
+    table_head_object = dash_table.DataTable(
+        id="table-head-id",
+        columns = [{"name": i, "id": i} for i in features]
+    )
+
+    # After filter sample table div
+    table_head_div = html.Div(
+        children=[
+            html.H2(
+                children="Sample Table"
+            ),
+            table_head_object
+        ]
+    )
+
+    ################## Download Data Reference Link ##################
+    reference_link_object = html.A(
+        "Download Data",
+        id = "download-link",
+        download = "rawdata.csv",
+        href = "",
+        target = "_blank"
+    )
+
     return html.Div(
         children=[
             header_div,
             scatter_plot_div,
             filter_div,
-            table_div
+            table_div,
+            table_head_div,
+            reference_link_object
         ]
     )
