@@ -123,9 +123,9 @@ def main(dataframe):
    
         # Shuffle dataframe
         new_df = new_df.sample(frac=1)
-        return table_df.to_dict("records"), new_df.head(10).to_dict("records"), csv_string
+        return table_df.to_dict("records"), new_df.to_dict("records"), csv_string
 
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
 if __name__ == "__main__":
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']

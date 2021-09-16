@@ -311,7 +311,12 @@ def create_layout(features):
     ################## Table Object (Sample table after filter/s) ##################
     table_head_object = dash_table.DataTable(
         id="table-head-id",
-        columns = [{"name": i, "id": i} for i in features]
+        columns = [{"name": i, "id": i} for i in features],
+        sort_action="native",
+        sort_mode="multi",
+        page_action="native",
+        page_current=0,
+        page_size=10,
     )
 
     # After filter sample table div
