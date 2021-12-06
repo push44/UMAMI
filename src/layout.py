@@ -1,3 +1,4 @@
+from dash.dependencies import Output
 import dash_table
 
 import pandas as pd
@@ -69,7 +70,7 @@ def thresholds(df, x, y, lb_x, ub_x, lb_y, ub_y):
     return new_df
 
 def create_input(input_id, input_placeholder):
-    """Return input object to receive bounds"""
+    # Return input object to receive bounds
     return dcc.Input(
                 id=input_id,
                 type="number",
@@ -78,23 +79,6 @@ def create_input(input_id, input_placeholder):
                 max=np.inf,
                 style={"width":"30%"}
             )
-
-def create_dropdown_div(input_id, default_value, lb, ub, dropdown_list):
-    """Return Div object with dropdown menue along with the options of receiving lower bound
-    and upper bound for adding filter"""
-    return html.Div(
-            children=[
-                        dcc.Dropdown(
-                                    id=input_id,
-                                    options=[{'label': col, 'value': col} for col in dropdown_list],
-                                    value=default_value ,
-                                    style={"width":"60%"}                       
-                        ),
-                        lb,
-                        ub,            
-            ],
-            style = {"display":"inline-flex"}
-        )
 
 def create_new_dropdown_div(click_event, dropdown_list, add_filter=True):
     """Returns dropdown object indexed according to click event (number of clicks)
@@ -149,7 +133,8 @@ def create_new_dropdown_div(click_event, dropdown_list, add_filter=True):
                 style={"display":"grid"}
             )
 
-def create_table_df(dataframe, clicks, add_features, bounds, remove_features):
+#remove_features
+def create_table_df(dataframe, clicks, add_features, bounds):
     """Returns pandas dataframe of feature names and number of out of bounds values"""
     # Copy dataframe to a new variable (To store changed/ or new dataframe)
     new_df = dataframe.copy(deep=True)
@@ -176,19 +161,19 @@ def create_table_df(dataframe, clicks, add_features, bounds, remove_features):
         # Iterate over features to be added
         for ind, feat in enumerate(add_features):
             # Avoid if feature is also must be removed
-            if not feat in remove_features:
-                lb, ub = bounds[ind]
-                data[feat] = dataframe[(dataframe[feat]<lb) | (dataframe[feat]>ub)].shape[0]
-                
-                # new_df that meets the criterias
-                if lb==None:
-                    new_df = new_df[new_df[feat]<ub]
-                elif ub==None:
-                    new_df = new_df[new_df[feat]>lb]
-                elif lb==None and ub==None:
-                    pass
-                else:
-                    new_df = new_df[(new_df[feat]>lb) & (new_df[feat]<ub)]
+            #if not feat in remove_features:
+            lb, ub = bounds[ind]
+            data[feat] = dataframe[(dataframe[feat]<lb) | (dataframe[feat]>ub)].shape[0]
+            
+            # new_df that meets the criterias
+            if lb==None:
+                new_df = new_df[new_df[feat]<ub]
+            elif ub==None:
+                new_df = new_df[new_df[feat]>lb]
+            elif lb==None and ub==None:
+                pass
+            else:
+                new_df = new_df[(new_df[feat]>lb) & (new_df[feat]<ub)]
 
         # Convert to dataframe
         table_df = pd.DataFrame({
@@ -201,11 +186,36 @@ def create_table_df(dataframe, clicks, add_features, bounds, remove_features):
         
     return table_df, new_df
 
-def create_layout(features):
+def create_slider(slider_id, min_val, max_val):
+    return dcc.RangeSlider(
+            id = slider_id,
+            min = min_val,
+            max = max_val,
+            step = 0.001,
+            value = [min_val, max_val],
+            updatemode = "drag"
+    )
+
+def create_dropdown_div(dropdown_id, features, column, slider_div):
+    return html.Div(
+            children=[
+                        dcc.Dropdown(
+                                    id=dropdown_id,
+                                    options=[{'label': col, 'value': col} for col in features],
+                                    value=column ,
+                                    style={"width":"150px"}          
+                        ),
+                        slider_div
+                        
+            ],
+            style = {"display":"flex"}
+        )
+
+def create_layout(df):
     """
     Returns page layout
     """
-
+    features = df.columns
     ################## Page Header ##################
     header_div = html.Div(
         children=[
@@ -218,21 +228,56 @@ def create_layout(features):
 
     ################## Scatter Plot ##################
 
-    # Create bound inputs
-    lb_x = create_input("lbx", "Lower Bound")
-    lb_y = create_input("lby", "Lower Bound")
-    ub_x = create_input("ubx", "Upper Bound")
-    ub_y = create_input("uby", "Upper Bound")
+    # x axis
+    xaxis_slider = create_slider(
+        slider_id = "my-range-slider-x",
+        min_val = df["ABS_wf_D"].min(),
+        max_val = df["ABS_wf_D"].max()
+    )
 
-    # Create dropdowns for x and y axis of the scatter plot
-    x_dropdown_div = create_dropdown_div("xaxis-column","ABS_wf_D", lb_x, ub_x, features[2:])
-    y_dropdown_div = create_dropdown_div("yaxis-column", "STAT_CC_D", lb_y, ub_y, features[2:])
+    slider_x_div = html.Div(
+        children = [
+            xaxis_slider,
+            html.Div(f"{xaxis_slider.value}", id = "xaxis-output-container")
+        ],
+        style={"width":"150px"}
+    )
+
+    x_dropdown_div = create_dropdown_div(
+        dropdown_id = "xaxis-column",
+        features = features[2:],
+        column = "ABS_wf_D",
+        slider_div = slider_x_div
+    )
+
+    # y axis
+    yaxis_slider = create_slider(
+        slider_id = "my-range-slider-y",
+        min_val = df["STAT_CC_D"].min(),
+        max_val = df["STAT_CC_D"].max()
+    )
+
+    slider_y_div = html.Div(
+        children = [
+            yaxis_slider,
+            html.Div(f"{yaxis_slider.value}", id = "yaxis-output-container")
+        ],
+        style={"width":"150px"}
+    )
+
+    y_dropdown_div = create_dropdown_div(
+        dropdown_id = "yaxis-column",
+        features = features[2:],
+        column = "STAT_CC_D",
+        slider_div = slider_y_div
+    )
 
     # Dropdown div
     dropdown_div = html.Div(
         children=[
             x_dropdown_div,
-            y_dropdown_div
+            y_dropdown_div,
+            
         ],
         style={"display":"grid"}
     )
@@ -262,26 +307,26 @@ def create_layout(features):
     )
 
     # Removing Filters
-    remove_filter_div = html.Div(
+    """remove_filter_div = html.Div(
         children=[
             html.Button("Remove Filter", id="remove-filter", n_clicks=0),
             html.Div(id="dropdown-container-remove", children=[])
         ]
-    )
+    )"""
 
     # Adding/ Removing filter div
+    #remove_filter_div
     filter_div = html.Div(
         children=[
             html.H2(
-                children="Add/ Remove Filters"
+                children="Add Filters"
             ),
             add_filter_div,
-            remove_filter_div
         ]
     )
 
     ################## Table Object (Out of range table) ##################
-    table_object = dash_table.DataTable(
+    """table_object = dash_table.DataTable(
         id = "table-id",
         columns = [{"name": i, "id": i} for i in ["Features", "Out-of-range-values"]],
         style_table={
@@ -296,21 +341,21 @@ def create_layout(features):
             "font_size": "16px",
             "font_weight": "bold"
         }
-    )
+    )"""
     
     # Out of range table div
-    table_div = html.Div(
+    """table_div = html.Div(
             children=[
                 html.H2(
                     children="Table"
                 ),
                 table_object      
             ]
-        )
+        )"""
 
     ################## Table Object (Sample table after filter/s) ##################
-    table_head_object = dash_table.DataTable(
-        id="table-head-id",
+    table_object = dash_table.DataTable(
+        id="table-id",
         columns = [{"name": i, "id": i} for i in features],
         sort_action="native",
         sort_mode="multi",
@@ -320,12 +365,12 @@ def create_layout(features):
     )
 
     # After filter sample table div
-    table_head_div = html.Div(
+    table_div = html.Div(
         children=[
             html.H2(
                 children="Sample Table"
             ),
-            table_head_object
+            table_object
         ]
     )
 
@@ -338,13 +383,37 @@ def create_layout(features):
         target = "_blank"
     )
 
+    ################## Page Arrangement ##################
+
+    # First half of page with filters and scatter plot
+    top_half_div = html.Div(
+        children= [
+            filter_div,
+            scatter_plot_div
+        ]
+    )
+
+    # Bottom half of page with table and download link
+    #table_div,
+    bottom_half_div = html.Div(
+        children= [ 
+            table_div,
+            reference_link_object
+        ]
+    )
+
+    # Full page
+    page_div = html.Div(
+        children = [
+            top_half_div,
+            bottom_half_div,
+        ]
+    )
+
+    # Final arrangement
     return html.Div(
         children=[
             header_div,
-            scatter_plot_div,
-            filter_div,
-            table_div,
-            table_head_div,
-            reference_link_object
+            page_div
         ]
     )
