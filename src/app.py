@@ -8,7 +8,7 @@ import numpy as np
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
-from dash.dependencies import ALL
+from dash.dependencies import ALL, MATCH, ALLSMALLER
 
 from read import read
 from layout import create_new_dropdown_div
@@ -20,54 +20,28 @@ def main(dataframe):
     # Get app layout
     app.layout = create_layout(dataframe)
 
-    ############################## Update Slider ##############################
+    ############## Update scatter plot sliders on variable selection ##############
     # x axis
     @app.callback(
         Output("my-range-slider-x", "min"),
-        Input("xaxis-column", "value")
-    )
-    def update_xaxis_min(xaxis_column):
-        return dataframe[xaxis_column].min()
-
-    @app.callback(
         Output("my-range-slider-x", "max"),
+        Output("my-range-slider-x", "value"),
         Input("xaxis-column", "value")
     )
-    def update_xaxis_max(xaxis_column):
-        return dataframe[xaxis_column].max()
-
-    @app.callback(
-        Output("my-range-slider-x", "value"),
-        Input("xaxis-column", "value") 
-    )
-    def update_xaxis_value(xaxis_column):
-        range = [dataframe[xaxis_column].min(), dataframe[xaxis_column].max()]
-        return range
+    def update_xaxis_values(xaxis_column):
+        return [dataframe[xaxis_column].min(), dataframe[xaxis_column].max(), [dataframe[xaxis_column].min(), dataframe[xaxis_column].max()]]
 
     # y axis
     @app.callback(
         Output("my-range-slider-y", "min"),
-        Input("yaxis-column", "value")
-    )
-    def update_yaxis_min(yaxis_column):
-        return dataframe[yaxis_column].min()
-
-    @app.callback(
         Output("my-range-slider-y", "max"),
+        Output("my-range-slider-y", "value"),
         Input("yaxis-column", "value")
     )
-    def update_yaxis_max(yaxis_column):
-        return dataframe[yaxis_column].max()
+    def update_yaxis_values(yaxis_column):
+        return [dataframe[yaxis_column].min(), dataframe[yaxis_column].max(), [dataframe[yaxis_column].min(), dataframe[yaxis_column].max()]]
 
-    @app.callback(
-        Output("my-range-slider-y", "value"),
-        Input("yaxis-column", "value") 
-    )
-    def update_yaxis_value(yaxis_column):
-        range = [dataframe[yaxis_column].min(), dataframe[yaxis_column].max()]
-        return range
-
-    ############################## Update Scatter Plot ##############################
+    ############## Update scatter plot on slider change ##############
     @app.callback(
         Output("indicator-graphic", "figure"),
         Output("xaxis-output-container", "children"),
@@ -93,63 +67,56 @@ def main(dataframe):
         fig = px.scatter(upadted_dataframe, x=xaxis_column_name, y=yaxis_column_name)
         return fig, f"{xaxis_values}", f"{yaxis_values}"
 
-    ############################## Update Dropdown (Add filter) ##############################
-    # Initiate empty-dropdown after every click event (n_clicks type) by
-    # component_id = add-filter.
+    ############# Publish default filter on click event #############
     @app.callback(
         Output("dropdown-container", "children"),
         Input("add-filter", "n_clicks"),
         State("dropdown-container", "children")
     )
     def display_dropdown(button_click, dropdown_children_state):
-        # If click event has occured then create new dropdown menue to add next filter
-        # These dropdown menues are indexed over button_click (click event number)
         new_dropdown_div = create_new_dropdown_div(button_click, dataframe.columns[2:])
-        # Return list of dropdown objects (In sequence)
         dropdown_children_state.append(new_dropdown_div)
 
         return dropdown_children_state
 
-    ############################## Update Dropdown (Remove filter) ##############################
-    # Initiate empty-dropdown after every click event (n_clicks type) by
-    # component_id = add-filter.
-    """@app.callback(
-        Output("dropdown-container-remove", "children"),
-        Input("remove-filter", "n_clicks"),
-        State("dropdown-container-remove", "children")
+    ########### Update filter sliders on variable selection ###########
+    @app.callback(
+        Output({"type":"filter-slider", "index": MATCH}, "min"),
+        Output({"type":"filter-slider", "index": MATCH}, "max"),
+        Output({"type":"filter-slider", "index": MATCH}, "value"),
+        Input({"type": "filter-dropdown", "index": MATCH}, "value")
     )
-    def display_dropdown(button_click, dropdown_children_state):
-        # If click event has occured then create new dropdown menue to add next filter
-        # These dropdown menues are indexed over button_click (click event number)
-        new_dropdown_div = create_new_dropdown_div(button_click, dataframe.columns[2:], False)
-        # Return list of dropdown objects (In sequence)
-        dropdown_children_state.append(new_dropdown_div)
+    def update_filter_slider_on_variable_selection(column):
+        if column == None:
+            min = -1000
+            max = 1000
+        else:
+            min = dataframe[column].min()
+            max = dataframe[column].max()
+        value = [min, max]
+        return min, max, value
 
-        return dropdown_children_state"""
+    ####### Update filter slider output on slider change #######
+    @app.callback(
+        Output({"type":"filter-output-container", "index": MATCH}, "children"),
+        Input({"type":"filter-slider", "index": MATCH}, "value")
+    )
+    def update_filter_slider_output_on_slider_change(filter_slider):
+        return f"{filter_slider}"
 
-    ############################## Update Table (Add filter) ##############################
-    # Initialize table to count out-of-range-values
-    # Update table (sort by out-of-range-values desc) immediately after 
-    # click event has occured
-    #Output("table-id", "data"),
-    #Input("remove-filter", "n_clicks"),
-    #remove_filter_n_clicks,
-    #State({'type': 'filter-dropdown-remove', 'index': ALL}, 'value'),
-    #remove_filter_dropdown_state
+    ########### Update table on click event ###########
     @app.callback(
         Output("table-id", "data"),
         Output("download-link", "href"),
         Input("add-filter", "n_clicks"),
-        State({'type': 'filter-dropdown-add', 'index': ALL}, 'value'),
-        State({'type': 'number', 'index': ALL}, 'value')
+        State({"type": "filter-dropdown", "index": ALL}, "value"),
+        State({"type": "filter-slider", "index": ALL}, "value")
     )
-    def on_add_click(add_filter_n_clicks, add_filter_dropdown_state, limits_state):
+    def on_add_click(add_filter_n_clicks, filter_dropdown, filter_slider):
 
-        add_filter_features = add_filter_dropdown_state
-        selected_bounds = np.array(limits_state).reshape(-1, 2)
-        #remove_filter_features = remove_filter_dropdown_state
-        # Create table to be rendered
-        #remove_filter_features
+        add_filter_features = filter_dropdown
+        selected_bounds = np.array(filter_slider).reshape(-1, 2)
+
         _, new_df = create_table_df(
             dataframe,
             add_filter_n_clicks,
@@ -162,6 +129,7 @@ def main(dataframe):
    
         # Shuffle dataframe
         new_df = new_df.sample(frac=1)
+        new_df.to_dict("records"), csv_string
         return new_df.to_dict("records"), csv_string
 
     app.run_server(debug=True)

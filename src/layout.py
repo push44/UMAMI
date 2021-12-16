@@ -80,59 +80,6 @@ def create_input(input_id, input_placeholder):
                 style={"width":"30%"}
             )
 
-def create_new_dropdown_div(click_event, dropdown_list, add_filter=True):
-    """Returns dropdown object indexed according to click event (number of clicks)
-    for adding new filter when one is selected"""
-    if add_filter:
-        # Create new_dropdown for add filter
-        new_dropdown = dcc.Dropdown(
-                id={
-                    "type": "filter-dropdown-add",
-                    "index": click_event
-                },
-                options=[{"label":i, "value":i} for i in dropdown_list],
-                style={"width":"60%"}
-            )
-
-        new_lb = create_input({"type":"number", "index": click_event}, "Lower Bound")
-        new_ub = create_input({"type":"number", "index": click_event}, "Upper Bound")
-
-        return html.Div(
-                [
-                        html.Div(
-                            [
-                                new_dropdown,
-                                new_lb,
-                                new_ub
-                            ],
-                            style = {"display":"inline-flex"}
-                    )
-                ],
-                style={"display":"grid"}
-            )
-    else:
-        # Create new_dropdown for remove filter
-        new_dropdown = dcc.Dropdown(
-                id={
-                    "type": "filter-dropdown-remove",
-                    "index": click_event
-                },
-                options=[{"label":i, "value":i} for i in dropdown_list],
-                style={"width":"60%"}
-            )
-
-        return html.Div(
-                [
-                        html.Div(
-                            [
-                                new_dropdown,
-                            ],
-                            style = {"display":"inline-flex"}
-                    )
-                ],
-                style={"display":"grid"}
-            )
-
 #remove_features
 def create_table_df(dataframe, clicks, add_features, bounds):
     """Returns pandas dataframe of feature names and number of out of bounds values"""
@@ -203,13 +150,73 @@ def create_dropdown_div(dropdown_id, features, column, slider_div):
                                     id=dropdown_id,
                                     options=[{'label': col, 'value': col} for col in features],
                                     value=column ,
-                                    style={"width":"150px"}          
+                                    style={"width":"150px"},
+                                    clearable=False          
                         ),
                         slider_div
                         
             ],
             style = {"display":"flex"}
         )
+
+def create_new_dropdown_div(click_event, dropdown_list):
+    """Returns dropdown object indexed according to click event (number of clicks)
+    for adding new filter when one is selected"""
+
+    slider = dcc.RangeSlider(
+        id = {
+            "type": "filter-slider",
+            "index": click_event
+        },
+        min = -1000,
+        max = 1000,
+        step = 0.001,
+        value = [-1000, 1000],
+        updatemode = "drag"
+    )
+
+
+    """slider = create_slider(
+        slider_id=f"slider-id",
+        min_val = -10000,
+        max_val = 10000
+    )"""
+
+    slider_div = html.Div(
+        children = [
+            slider,
+            html.Div(f"{slider.value}", id={
+                    "type": "filter-output-container",
+                    "index": click_event
+            })
+        ],
+        style={"width":"150px"}
+    )
+
+    # Create new_dropdown for add filter
+    new_dropdown = dcc.Dropdown(
+            id={
+                "type": "filter-dropdown",
+                "index": click_event
+            },
+            options=[{"label":i, "value":i} for i in dropdown_list],
+            style={"width":"60%"},
+            clearable=False
+        )
+
+    return html.Div(
+            [
+                    html.Div(
+                        [
+                            new_dropdown,
+                            slider_div
+                        ],
+                        style = {"display":"inline-flex"}
+                )
+            ],
+            style={"display":"grid"}
+        )
+
 
 def create_layout(df):
     """
@@ -388,8 +395,9 @@ def create_layout(df):
     # First half of page with filters and scatter plot
     top_half_div = html.Div(
         children= [
+            scatter_plot_div,
             filter_div,
-            scatter_plot_div
+            html.Div(id="dummy-output")
         ]
     )
 
