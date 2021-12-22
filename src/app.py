@@ -83,7 +83,6 @@ def main(dataframe):
     @app.callback(
         Output({"type":"filter-slider", "index": MATCH}, "min"),
         Output({"type":"filter-slider", "index": MATCH}, "max"),
-        Output({"type":"filter-slider", "index": MATCH}, "value"),
         Input({"type": "filter-dropdown", "index": MATCH}, "value")
     )
     def update_filter_slider_on_variable_selection(column):
@@ -93,26 +92,26 @@ def main(dataframe):
         else:
             min = dataframe[column].min()
             max = dataframe[column].max()
-        value = [min, max]
-        return min, max, value
+        return min, max
 
     ####### Update filter slider output on slider change #######
     @app.callback(
         Output({"type":"filter-output-container", "index": MATCH}, "children"),
+        Output({"type":"filter-slider", "index": MATCH}, "value"),
         Input({"type":"filter-slider", "index": MATCH}, "value")
     )
     def update_filter_slider_output_on_slider_change(filter_slider):
-        return f"{filter_slider}"
+        return f"{filter_slider}", filter_slider
 
     ########### Update table on click event ###########
     @app.callback(
         Output("table-id", "data"),
         Output("download-link", "href"),
         Input("add-filter", "n_clicks"),
-        State({"type": "filter-dropdown", "index": ALL}, "value"),
-        State({"type": "filter-slider", "index": ALL}, "value")
+        Input({"type": "filter-slider", "index": ALL}, "value"),
+        State({"type": "filter-dropdown", "index": ALL}, "value")
     )
-    def on_add_click(add_filter_n_clicks, filter_dropdown, filter_slider):
+    def on_add_click(add_filter_n_clicks, filter_slider, filter_dropdown):
 
         add_filter_features = filter_dropdown
         selected_bounds = np.array(filter_slider).reshape(-1, 2)
