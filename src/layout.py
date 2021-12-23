@@ -95,32 +95,25 @@ def create_table_df(dataframe, clicks, add_features, bounds):
         "Out-of-range-values": [0]*len(dataframe.columns)
     })
 
-    # Enter if click event (add filter) has occured at least once
-    if clicks>0:
+    # Initialize a data dictionary to store out of range values per feature
+    data = dict(zip(table_df["Features"].values, table_df["Out-of-range-values"].values))
 
-        # Initialize a data dictionary to store out of range values per feature
-        data = dict(zip(table_df["Features"].values, table_df["Out-of-range-values"].values))
-
-        # add_features receives a None value when remove_filter has occured at least once
-        if add_features[-1]==None:
-            add_features.pop(-1)
-
-        # Iterate over features to be added
-        for ind, feat in enumerate(add_features):
-            # Avoid if feature is also must be removed
-            #if not feat in remove_features:
-            lb, ub = bounds[ind]
-            data[feat] = dataframe[(dataframe[feat]<lb) | (dataframe[feat]>ub)].shape[0]
-            
-            # new_df that meets the criterias
-            if lb==None:
-                new_df = new_df[new_df[feat]<ub]
-            elif ub==None:
-                new_df = new_df[new_df[feat]>lb]
-            elif lb==None and ub==None:
-                pass
-            else:
-                new_df = new_df[(new_df[feat]>lb) & (new_df[feat]<ub)]
+    # Iterate over features to be added
+    for ind, feat in enumerate(add_features):
+        # Avoid if feature is also must be removed
+        #if not feat in remove_features:
+        lb, ub = bounds[ind]
+        data[feat] = dataframe[(dataframe[feat]<lb) | (dataframe[feat]>ub)].shape[0]
+        
+        # new_df that meets the criterias
+        if lb==None:
+            new_df = new_df[new_df[feat]<ub]
+        elif ub==None:
+            new_df = new_df[new_df[feat]>lb]
+        elif lb==None and ub==None:
+            pass
+        else:
+            new_df = new_df[(new_df[feat]>lb) & (new_df[feat]<ub)]
 
         # Convert to dataframe
         table_df = pd.DataFrame({
@@ -129,7 +122,7 @@ def create_table_df(dataframe, clicks, add_features, bounds):
         })
 
         # Sort the table according to out of range values
-        table_df.sort_values("Out-of-range-values", inplace=True, ascending=False)
+        #table_df.sort_values("Out-of-range-values", inplace=True, ascending=False)
         
     return table_df, new_df
 
@@ -425,3 +418,4 @@ def create_layout(df):
             page_div
         ]
     )
+
