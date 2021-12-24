@@ -8,66 +8,36 @@ import numpy as np
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
-from dash.dependencies import ALL, MATCH, ALLSMALLER
+from dash.dependencies import ALL, MATCH
 
 from read import read
 from layout import create_new_dropdown_div
 from layout import create_layout
-from layout import create_table_df
-from layout import thresholds
+from layout import create_filter_table
 
 def main(dataframe):
     # Get app layout
     app.layout = create_layout(dataframe)
 
-    ############## Update scatter plot sliders on variable selection ##############
-    # x axis
-    @app.callback(
-        Output("my-range-slider-x", "min"),
-        Output("my-range-slider-x", "max"),
-        Output("my-range-slider-x", "value"),
-        Input("xaxis-column", "value")
-    )
-    def update_xaxis_values(xaxis_column):
-        return [dataframe[xaxis_column].min(), dataframe[xaxis_column].max(), [dataframe[xaxis_column].min(), dataframe[xaxis_column].max()]]
+    ############################################
+    ############## 1)Scatter Plot ##############
+    ############################################
 
-    # y axis
-    @app.callback(
-        Output("my-range-slider-y", "min"),
-        Output("my-range-slider-y", "max"),
-        Output("my-range-slider-y", "value"),
-        Input("yaxis-column", "value")
-    )
-    def update_yaxis_values(yaxis_column):
-        return [dataframe[yaxis_column].min(), dataframe[yaxis_column].max(), [dataframe[yaxis_column].min(), dataframe[yaxis_column].max()]]
-
-    ############## Update scatter plot on slider change ##############
+    #Update scatter plot
     @app.callback(
         Output("indicator-graphic", "figure"),
-        Output("xaxis-output-container", "children"),
-        Output("yaxis-output-container", "children"),
-        Input("my-range-slider-x", "value"),
-        Input("my-range-slider-y", "value"),
-        State("xaxis-column", "value"),
-        State("yaxis-column", "value")
+        Input("xaxis-column", "value"),
+        Input("yaxis-column", "value")
     )
-    def update_scatter_plot(xaxis_values, yaxis_values, xaxis_column_name, yaxis_column_name):
+    def update_scatter_plot(xaxis_column_name, yaxis_column_name):
+        fig = px.scatter(dataframe, x=xaxis_column_name, y=yaxis_column_name)
+        return fig
 
-        upadted_dataframe = thresholds(
-            df = dataframe,
-            x = xaxis_column_name,
-            y = yaxis_column_name,
-            lb_x = xaxis_values[0],
-            ub_x = xaxis_values[1],
-            lb_y = yaxis_values[0],
-            ub_y = yaxis_values[1]
-        )
+    ############################################
+    ################# 2)Filter #################
+    ############################################
 
-        # Create scatter plot
-        fig = px.scatter(upadted_dataframe, x=xaxis_column_name, y=yaxis_column_name)
-        return fig, f"{xaxis_values}", f"{yaxis_values}"
-
-    ############# Publish default filter on click event #############
+    #2.1) Publish default filter on click event
     @app.callback(
         Output("dropdown-container", "children"),
         Input("add-filter", "n_clicks"),
@@ -76,10 +46,9 @@ def main(dataframe):
     def display_dropdown(button_click, dropdown_children_state):
         new_dropdown_div = create_new_dropdown_div(button_click, dataframe.columns[2:])
         dropdown_children_state.append(new_dropdown_div)
-
         return dropdown_children_state
 
-    ########### Update filter sliders on variable selection ###########
+    #2.2) Update filter sliders on variable selection
     @app.callback(
         Output({"type":"filter-slider", "index": MATCH}, "min"),
         Output({"type":"filter-slider", "index": MATCH}, "max"),
@@ -119,7 +88,11 @@ def main(dataframe):
         slider_value_display = list(map(lambda val: round(val, 3), slider_value))
         return min, max, slider_value, f"{slider_value}"
 
-    ########### Update table on click event ###########
+    ############################################
+    ############## 3)Filter table ##############
+    ############################################
+
+    #Update table on click event
     @app.callback(
         Output("table-id", "data"),
         Output("download-link", "href"),
@@ -132,9 +105,8 @@ def main(dataframe):
         add_filter_features = list(filter(lambda val: val!=None, filter_dropdown))
         selected_bounds = np.array(filter_slider).reshape(-1, 2)
 
-        _, new_df = create_table_df(
+        new_df = create_filter_table(
             dataframe,
-            add_filter_n_clicks,
             add_filter_features,
             selected_bounds
         )
@@ -142,8 +114,6 @@ def main(dataframe):
         csv_string = new_df.to_csv(index=False, encoding="utf-8")
         csv_string = "data:text/csv;charset=utf-8,%EF%BB%BF" + urllib.parse.quote(csv_string)
    
-        # Shuffle dataframe
-        new_df = new_df.sample(frac=1)
         new_df.to_dict("records"), csv_string
         return new_df.to_dict("records"), csv_string
 
