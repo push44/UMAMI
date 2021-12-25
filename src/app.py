@@ -40,13 +40,23 @@ def main(dataframe):
     #2.1) Publish default filter on click event
     @app.callback(
         Output("dropdown-container", "children"),
-        Input("add-filter", "n_clicks"),
-        State("dropdown-container", "children")
+        [Input("add-filter", "n_clicks"),
+        Input("remove-filter", "n_clicks")],
+        [State("dropdown-container", "children")],
+        prevent_initial_call=True
     )
-    def display_dropdown(button_click, dropdown_children_state):
-        new_dropdown_div = create_new_dropdown_div(button_click, dataframe.columns[2:])
-        dropdown_children_state.append(new_dropdown_div)
-        return dropdown_children_state
+    def display_dropdown(add_clicks, remove_clicks, div_children):
+        ctx = dash.callback_context
+        triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+        if triggered_id == "add-filter":
+            new_div_child = create_new_dropdown_div(add_clicks, dataframe.columns[2:])
+            div_children.append(new_div_child)
+
+        elif triggered_id == "remove-filter" and len(div_children)>0:
+            div_children = div_children[:-1]
+
+        return div_children
 
     #2.2) Update filter sliders on variable selection
     @app.callback(

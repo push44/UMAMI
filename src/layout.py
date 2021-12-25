@@ -143,8 +143,9 @@ def return_scatter_plot_div(features):
 def return_filter_div():
     add_filter_div = html.Div(
         children=[
-            html.Button("Add New Filter", id="add-filter", n_clicks=0),
-            html.Div(id="dropdown-container", children=[])
+            html.Button("Add Filter", id="add-filter", n_clicks=0),
+            html.Div(id="dropdown-container", children=[]),
+            html.Button("Remove Filter", id="remove-filter", n_clicks=0)
         ]
     )
 
@@ -153,7 +154,7 @@ def return_filter_div():
                 html.H2(
                     children="Add Filters"
                 ),
-                add_filter_div,
+                add_filter_div
             ]
     )
 
