@@ -17,10 +17,14 @@ def create_filter_table(dataframe, add_features, bounds):
     return new_df
 
 #2) Dropdown menue for scatter plot
-def create_dropdown_div(dropdown_id, features, column):
+def create_dropdown_div(dropdown_id, features, column, display_name, right_margin="0px"):
     """Return dropdown menue"""
     return html.Div(
             children=[
+                        html.H5(
+                            children=[display_name],
+                            style={"margin-right":"15px"}
+                        ),
                         dcc.Dropdown(
                                     id=dropdown_id,
                                     options=[{'label': col, 'value': col} for col in features],
@@ -30,7 +34,7 @@ def create_dropdown_div(dropdown_id, features, column):
                         )
                         
             ],
-            style = {"display":"flex"}
+            style = {"display":"flex", "margin-right":right_margin}
         )
 
 #3) Dropdown to publish new dropdown to add new filter
@@ -69,7 +73,7 @@ def create_new_dropdown_div(click_event, dropdown_list):
                 "index": click_event
             },
             options=[{"label":i, "value":i} for i in dropdown_list],
-            style={"width":"60%"},
+            style={"width":"200px"},
             clearable=False
         )
 
@@ -107,14 +111,17 @@ def return_scatter_plot_div(features):
     x_dropdown_div = create_dropdown_div(
         dropdown_id = "xaxis-column",
         features = features,
-        column = "ABS_wf_D"
+        column = "ABS_wf_D",
+        display_name="X-axis:",
+        right_margin="40px"
     )
 
     # y dropdown div
     y_dropdown_div = create_dropdown_div(
         dropdown_id = "yaxis-column",
         features = features,
-        column = "STAT_CC_D"
+        column = "STAT_CC_D",
+        display_name="Y-axis:"
     )
 
     # Dropdown div
@@ -123,20 +130,24 @@ def return_scatter_plot_div(features):
             x_dropdown_div,
             y_dropdown_div
         ],
-        style={"display":"grid"}
+        style={"display":"inline-flex", "margin-left":"80px"}
     )
 
     # Scatter plot object
-    graph_object = dcc.Graph(id='indicator-graphic')
+    graph_object = html.Div(
+        children=[dcc.Graph(id='indicator-graphic')]
+    )
 
     return html.Div(
             children=[
                 html.H2(
-                    children = "Scatter Plot"
+                    children = "Scatter Plot",
+                    style={"text-align":"center"}
                 ),
                 dropdown_div,
                 graph_object
-            ]
+            ],
+            style={"width":"800px", "align-content":"center", "border":"2px black solid"}
     )
 
 #3) Filter div
@@ -146,37 +157,47 @@ def return_filter_div():
             html.Button("Add Filter", id="add-filter", n_clicks=0),
             html.Div(id="dropdown-container", children=[]),
             html.Button("Remove Filter", id="remove-filter", n_clicks=0)
-        ]
+        ],
+        style={"margin-left":"20px"}
     )
 
     return html.Div(
             children=[
                 html.H2(
-                    children="Add Filters"
+                    children="Add Filters",
+                    style={"text-align":"center"}
                 ),
                 add_filter_div
-            ]
+            ],
+            style={"width":"500px", "overflow":"scroll", "border":"2px black solid"}
     )
 
 #4) Table after filters
 def return_filter_table(features):
-    table_object = dash_table.DataTable(
-        id="table-id",
-        columns = [{"name": i, "id": i} for i in features],
-        sort_action="native",
-        sort_mode="multi",
-        page_action="native",
-        page_current=0,
-        page_size=10,
+    table_object = html.Div(
+        children=[
+            dash_table.DataTable(
+                id="table-id",
+                columns = [{"name": i, "id": i} for i in features],
+                sort_action="native",
+                sort_mode="multi",
+                page_action="native",
+                page_current=0,
+                page_size=10,
+            )
+        ],
+        style={"overflow":"scroll", "margin-left":"50px", "border":"2px black solid"}
     )
 
     return html.Div(
         children=[
             html.H2(
-                children="Sample Table"
+                children="Sample Table",
+                style={"text-align":"center"}
             ),
             table_object
-        ]
+        ],
+        style={"width":"1200px"}
     )
 
 #5) Table download link
@@ -190,12 +211,23 @@ def return_download_link():
     )
 
 #6) Top half of page
-def return_divs(div1, div2):
+def return_top_half_divs(div1, div2):
     return html.Div(
         children= [
             div1,
             div2
-        ]
+        ],
+        style={"display":"inline-flex", "height":"580px", "width":"1300px"}
+    )
+
+#7) Bottom half of page
+def return_bottom_half_divs(div1, div2):
+    return html.Div(
+        children= [
+            div1,
+            div2
+        ],
+        style={"height":"500px", "width":"1300px", "margin-top":"50px"}
     )
 ####################### Page layout #######################
 
@@ -225,21 +257,23 @@ def create_layout(df):
     ######################################################
 
     #6) Top half of page
-    top_half_div = return_divs(
-        scatter_plot_div,
-        filter_div
+    top_half_div = return_top_half_divs(
+        filter_div,
+        scatter_plot_div
     )
 
     #7) Bottom half of page
-    bottom_half_div = return_divs(
+    bottom_half_div = return_bottom_half_divs(
         table_div,
         download_link_object
     )
 
     #8) Full page
-    page_div = return_divs(
-        top_half_div,
-        bottom_half_div,
+    page_div = html.Div(
+        children=[
+            top_half_div,
+            bottom_half_div,
+        ]
     )
 
     # Final arrangement
