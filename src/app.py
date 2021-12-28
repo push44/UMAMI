@@ -41,7 +41,7 @@ def main(dataframe):
     @app.callback(
         Output("dropdown-container", "children"),
         [Input("add-filter", "n_clicks"),
-        Input("remove-filter", "n_clicks")],
+        Input({"type":"remove-filter", "index":ALL}, "n_clicks")],
         [State("dropdown-container", "children")],
         prevent_initial_call=True
     )
@@ -49,12 +49,19 @@ def main(dataframe):
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
 
+        elm_in_div = len(div_children)
+
         if triggered_id == "add-filter":
-            new_div_child = create_new_dropdown_div(add_clicks, dataframe.columns[2:])
+            new_div_child = create_new_dropdown_div(elm_in_div, dataframe.columns[2:])
             div_children.append(new_div_child)
 
-        elif triggered_id == "remove-filter" and len(div_children)>0:
-            div_children = div_children[:-1]
+        elif triggered_id != "add-filter":
+            for idx, val in enumerate(remove_clicks):
+                if val is not None:
+                    #print(f"All the remove buttons: {remove_clicks}")
+                    #print(f"The index pertaining to the remove button clicked: {idx}")
+                    #print(f"The number of time this particualr remove button was clicked: {val}")
+                    del div_children[idx]
 
         return div_children
 
@@ -96,7 +103,7 @@ def main(dataframe):
             slider_value = default_value
 
         slider_value_display = list(map(lambda val: round(val, 3), slider_value))
-        return min, max, slider_value, f"{slider_value}"
+        return min, max, slider_value_display, f"{slider_value_display}"
 
     ############################################
     ############## 3)Filter table ##############

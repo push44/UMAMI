@@ -38,15 +38,28 @@ def create_dropdown_div(dropdown_id, features, column, display_name, right_margi
         )
 
 #3) Dropdown to publish new dropdown to add new filter
-def create_new_dropdown_div(click_event, dropdown_list):
+def create_new_dropdown_div(elem_in_div, dropdown_list):
     """Returns dropdown object indexed according to click event (number of clicks)
     for adding new filter when one is selected"""
+    # Remove filter button
+    remove_button = html.Button(
+                        "Remove",
+                        id = {
+                            "type": "remove-filter",
+                            "index": elem_in_div
+                        },
+                        style={
+                            "width":"70px",
+                            "padding":"0px",
+                            "margin-right":"10px"
+                        }
+                    )
 
     # Slider div indexed with n_clicks
     slider = dcc.RangeSlider(
         id = {
             "type": "filter-slider",
-            "index": click_event
+            "index": elem_in_div
         },
         min = -1000,
         max = 1000,
@@ -60,34 +73,30 @@ def create_new_dropdown_div(click_event, dropdown_list):
             slider,
             html.Div(f"{slider.value}", id={
                     "type": "filter-output-container",
-                    "index": click_event
+                    "index": elem_in_div
             })
         ],
-        style={"width":"150px"}
+        style={"width":"180px"}
     )
 
     # new dropdown object indexed with n_clicks
     new_dropdown = dcc.Dropdown(
             id={
                 "type": "filter-dropdown",
-                "index": click_event
+                "index": elem_in_div
             },
             options=[{"label":i, "value":i} for i in dropdown_list],
-            style={"width":"200px"},
+            style={"width":"175px"},
             clearable=False
         )
 
     return html.Div(
             [
-                    html.Div(
-                        [
-                            new_dropdown,
-                            slider_div
-                        ],
-                        style = {"display":"inline-flex"}
-                )
+                    remove_button,
+                    new_dropdown,
+                    slider_div
             ],
-            style={"display":"grid"}
+            style={"display":"inline-flex", "margin-top":"10px"}
         )
 
 #################### Return actual page element functions ####################
@@ -152,14 +161,28 @@ def return_scatter_plot_div(features):
 
 #3) Filter div
 def return_filter_div():
+
     add_filter_div = html.Div(
         children=[
-            html.Button("Add Filter", id="add-filter", n_clicks=0),
-            html.Div(id="dropdown-container", children=[]),
-            html.Button("Remove Filter", id="remove-filter", n_clicks=0)
-        ],
-        style={"margin-left":"20px"}
-    )
+                html.Div(
+                    children=[
+                        html.Button(
+                            "Add Filter",
+                            id="add-filter",
+                            n_clicks=0,
+                            style={"font-size":"10px"}
+                        ),
+                    ]
+                ),
+                html.Div(
+                    children=[
+                        html.Div(id="dropdown-container", children=[])
+                    ]
+                )
+
+            ],
+            style={"margin-left":"20px"}
+        )
 
     return html.Div(
             children=[
