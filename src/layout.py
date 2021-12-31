@@ -7,14 +7,21 @@ import dash_core_components as dcc
 #1) Filter table after add-filter
 def create_filter_table(dataframe, add_features, bounds):
     """Returns filtered pandas dataframe"""
-    new_df = dataframe.copy(deep=True)
-
+    #dataframe = dataframe.fillna('N/A').replace('', 'N/A')
+    unsatisfied_indices = set()
     # Iterate over features to be added
     for ind, feat in enumerate(add_features):
         lb, ub = bounds[ind]
-        new_df = new_df[(new_df[feat]>=lb) & (new_df[feat]<=ub)]
-        
-    return new_df
+        #print(lb, ub, dataframe[feat].min(), dataframe[feat].max())
+        unsatisfied_indices.update(
+            set(dataframe[(dataframe[feat]<lb) | (dataframe[feat]>ub)].index.tolist())
+        )
+    
+    new_df = dataframe.iloc[list(
+        set(dataframe.index) - unsatisfied_indices
+    )]
+    #print(len(unsatisfied_indices))
+    return new_df, list(unsatisfied_indices)
 
 #2) Dropdown menue for scatter plot
 def create_dropdown_div(dropdown_id, features, column, display_name, right_margin="0px"):
@@ -202,6 +209,15 @@ def return_filter_table(features):
             dash_table.DataTable(
                 id="table-id",
                 columns = [{"name": i, "id": i} for i in features],
+                style_data_conditional=[
+                    {
+                        'if': {
+                            'filter_query': '{{{}}} is blank'.format(col)
+                        },
+                        'backgroundColor': 'tomato',
+                        'color': 'white'
+                    } for col in features[2:]
+                ],
                 sort_action="native",
                 sort_mode="multi",
                 page_action="native",

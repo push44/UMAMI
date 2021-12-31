@@ -103,7 +103,7 @@ def main(dataframe):
             slider_value = default_value
 
         slider_value_display = list(map(lambda val: round(val, 3), slider_value))
-        return min, max, slider_value_display, f"{slider_value_display}"
+        return min, max, slider_value, f"{slider_value_display}"
 
     ############################################
     ############## 3)Filter table ##############
@@ -122,17 +122,31 @@ def main(dataframe):
         add_filter_features = list(filter(lambda val: val!=None, filter_dropdown))
         selected_bounds = np.array(filter_slider).reshape(-1, 2)
 
-        new_df = create_filter_table(
+        # Make all attributes non-null
+        dataframe.dropna(axis=0, how="all", inplace=True)
+
+        filtered_df, unsatisfied_indices = create_filter_table(
             dataframe,
             add_filter_features,
             selected_bounds
         )
 
-        csv_string = new_df.to_csv(index=False, encoding="utf-8")
+        # Category 1: Satisfies filter, records where all filtered attributes are non-null and meet the filter conditions.
+        cat1_df = filtered_df[filtered_df.isnull().sum(axis=1)<1]
+
+        # Category 2: Does not satisfy filter, records where at least one filtred attributes is non-null and does not meet the corresponding filter conditions.
+        cat2_df = dataframe.iloc[unsatisfied_indices]
+
+        # Category 3: Filter status unknown, records where all non-null attributes meet the corresponding filtered condition, and where at least one filtered attribute is null.
+        cat3_df = filtered_df[filtered_df.isnull().sum(axis=1)>0]
+        #print(cat3_df["case_name"].unique())
+        #print(dataframe.shape[0], filtered_df.shape[0], cat1_df.shape[0], cat2_df.shape[0], cat3_df.shape[0])
+
+        csv_string = filtered_df.to_csv(index=False, encoding="utf-8")
         csv_string = "data:text/csv;charset=utf-8,%EF%BB%BF" + urllib.parse.quote(csv_string)
    
-        new_df.to_dict("records"), csv_string
-        return new_df.to_dict("records"), csv_string
+        #filtered_df = filtered_df.sample(frac=1)
+        return filtered_df.to_dict("records"), csv_string
 
     app.run_server(debug=True)
 
