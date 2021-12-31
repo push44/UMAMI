@@ -56,7 +56,6 @@ def create_new_dropdown_div(elem_in_div, dropdown_list):
                             "index": elem_in_div
                         },
                         style={
-                            "width":"70px",
                             "padding":"0px",
                             "margin-right":"10px"
                         }

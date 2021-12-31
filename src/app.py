@@ -4,6 +4,7 @@ import dash
 import urllib.parse
 import plotly.express as px
 import numpy as np
+import pandas as pd
 
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -16,6 +17,10 @@ from layout import create_layout
 from layout import create_filter_table
 
 def main(dataframe):
+
+    # Drop rows having all attributes: null
+    dataframe.dropna(axis=0, how="all", inplace=True)
+
     # Get app layout
     app.layout = create_layout(dataframe)
 
@@ -27,10 +32,36 @@ def main(dataframe):
     @app.callback(
         Output("indicator-graphic", "figure"),
         Input("xaxis-column", "value"),
-        Input("yaxis-column", "value")
+        Input("yaxis-column", "value"),
+        Input({"type": "filter-slider", "index": ALL}, "value"),
+        State({"type": "filter-dropdown", "index": ALL}, "value")
     )
-    def update_scatter_plot(xaxis_column_name, yaxis_column_name):
-        fig = px.scatter(dataframe, x=xaxis_column_name, y=yaxis_column_name)
+    def update_scatter_plot(xaxis_column_name, yaxis_column_name, filter_slider, filter_dropdown):
+
+        add_filter_features = list(filter(lambda val: val!=None, filter_dropdown))
+        selected_bounds = np.array(filter_slider).reshape(-1, 2)
+
+        filtered_df, unsatisfied_indices = create_filter_table(
+            dataframe,
+            add_filter_features,
+            selected_bounds
+        )
+
+        # Category 1: Satisfies filter, records where all filtered attributes are non-null and meet the filter conditions.
+        cat1_df = filtered_df[filtered_df.isnull().sum(axis=1)<1].copy(deep=True)
+        cat1_df["category"] = "Satisfies filter"
+
+        # Category 2: Does not satisfy filter, records where at least one filtred attributes is non-null and does not meet the corresponding filter conditions.
+        cat2_df = dataframe.iloc[unsatisfied_indices].copy(deep=True)
+        cat2_df["category"] = "Does not satisfies filter"
+
+        # Category 3: Filter status unknown, records where all non-null attributes meet the corresponding filtered condition, and where at least one filtered attribute is null.
+        cat3_df = filtered_df[filtered_df.isnull().sum(axis=1)>0].copy(deep=True)
+        cat3_df["category"] = "Filter status unknown"
+
+        fig = px.scatter(pd.concat([
+            cat1_df, cat2_df, cat3_df
+        ]), x=xaxis_column_name, y=yaxis_column_name, color="category")
         return fig
 
     ############################################
@@ -122,25 +153,11 @@ def main(dataframe):
         add_filter_features = list(filter(lambda val: val!=None, filter_dropdown))
         selected_bounds = np.array(filter_slider).reshape(-1, 2)
 
-        # Make all attributes non-null
-        dataframe.dropna(axis=0, how="all", inplace=True)
-
-        filtered_df, unsatisfied_indices = create_filter_table(
+        filtered_df, _ = create_filter_table(
             dataframe,
             add_filter_features,
             selected_bounds
         )
-
-        # Category 1: Satisfies filter, records where all filtered attributes are non-null and meet the filter conditions.
-        cat1_df = filtered_df[filtered_df.isnull().sum(axis=1)<1]
-
-        # Category 2: Does not satisfy filter, records where at least one filtred attributes is non-null and does not meet the corresponding filter conditions.
-        cat2_df = dataframe.iloc[unsatisfied_indices]
-
-        # Category 3: Filter status unknown, records where all non-null attributes meet the corresponding filtered condition, and where at least one filtered attribute is null.
-        cat3_df = filtered_df[filtered_df.isnull().sum(axis=1)>0]
-        #print(cat3_df["case_name"].unique())
-        #print(dataframe.shape[0], filtered_df.shape[0], cat1_df.shape[0], cat2_df.shape[0], cat3_df.shape[0])
 
         csv_string = filtered_df.to_csv(index=False, encoding="utf-8")
         csv_string = "data:text/csv;charset=utf-8,%EF%BB%BF" + urllib.parse.quote(csv_string)
