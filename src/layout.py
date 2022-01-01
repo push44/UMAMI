@@ -1,6 +1,9 @@
-import dash_table
-import dash_html_components as html
-import dash_core_components as dcc
+#import dash_table
+from dash import dash_table, html, dcc
+from dash.dependencies import Output
+#import dash_html_components as html
+#import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 
 #################### Helper Functions ####################
 
@@ -44,22 +47,29 @@ def create_dropdown_div(dropdown_id, features, column, display_name, right_margi
             style = {"display":"flex", "margin-right":right_margin}
         )
 
+def make_tooltip(text, tooltip_target, placement="top"):
+    return dbc.Tooltip(
+        text,
+        target=tooltip_target,
+        placement=placement,
+    )
+
 #3) Dropdown to publish new dropdown to add new filter
 def create_new_dropdown_div(elem_in_div, dropdown_list):
     """Returns dropdown object indexed according to click event (number of clicks)
     for adding new filter when one is selected"""
     # Remove filter button
-    remove_button = html.Button(
-                        "Remove",
-                        id = {
-                            "type": "remove-filter",
-                            "index": elem_in_div
-                        },
+    button_id = {"type": "remove-filter","index": elem_in_div}
+    remove_button = html.I(
+                        className="bi bi-dash-circle-fill",
+                        id = button_id,
                         style={
-                            "padding":"0px",
                             "margin-right":"10px"
                         }
                     )
+
+    # Tooltip for remove button
+    remove_button_tooltip = make_tooltip("Remove Filter", button_id)
 
     # Slider div indexed with n_clicks
     slider = dcc.RangeSlider(
@@ -99,6 +109,7 @@ def create_new_dropdown_div(elem_in_div, dropdown_list):
     return html.Div(
             [
                     remove_button,
+                    remove_button_tooltip,
                     new_dropdown,
                     slider_div
             ],
@@ -167,17 +178,16 @@ def return_scatter_plot_div(features):
 
 #3) Filter div
 def return_filter_div():
-
+    button_id = "add-filter"
     add_filter_div = html.Div(
         children=[
                 html.Div(
                     children=[
-                        html.Button(
-                            "Add Filter",
-                            id="add-filter",
-                            n_clicks=0,
-                            style={"font-size":"10px"}
-                        ),
+                        html.I(
+                            id=button_id,
+                            className="bi bi-plus-circle-fill",
+                            n_clicks=0
+                        )
                     ]
                 ),
                 html.Div(
@@ -190,13 +200,17 @@ def return_filter_div():
             style={"margin-left":"20px"}
         )
 
+    # Tooltip for add button
+    add_button_tooltip = make_tooltip("Add New Filter", button_id)
+
     return html.Div(
             children=[
                 html.H2(
                     children="Add Filters",
                     style={"text-align":"center"}
                 ),
-                add_filter_div
+                add_filter_div,
+                add_button_tooltip
             ],
             style={"width":"500px", "overflow":"scroll", "border":"2px black solid"}
     )

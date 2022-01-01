@@ -1,6 +1,7 @@
 import config
 import json
 import dash
+import dash_bootstrap_components as dbc
 import urllib.parse
 import plotly.express as px
 import numpy as np
@@ -49,19 +50,19 @@ def main(dataframe):
 
         # Category 1: Satisfies filter, records where all filtered attributes are non-null and meet the filter conditions.
         cat1_df = filtered_df[filtered_df.isnull().sum(axis=1)<1].copy(deep=True)
-        cat1_df["category"] = "Satisfies filter"
+        cat1_df["Category:"] = "Satisfies filter"
 
         # Category 2: Does not satisfy filter, records where at least one filtred attributes is non-null and does not meet the corresponding filter conditions.
         cat2_df = dataframe.iloc[unsatisfied_indices].copy(deep=True)
-        cat2_df["category"] = "Does not satisfies filter"
+        cat2_df["Category:"] = "Does not satisfies filter"
 
         # Category 3: Filter status unknown, records where all non-null attributes meet the corresponding filtered condition, and where at least one filtered attribute is null.
         cat3_df = filtered_df[filtered_df.isnull().sum(axis=1)>0].copy(deep=True)
-        cat3_df["category"] = "Filter status unknown"
+        cat3_df["Category:"] = "Filter status unknown"
 
         fig = px.scatter(pd.concat([
             cat1_df, cat2_df, cat3_df
-        ]), x=xaxis_column_name, y=yaxis_column_name, color="category")
+        ]), x=xaxis_column_name, y=yaxis_column_name, color="Category:")
         return fig
 
     ############################################
@@ -168,6 +169,7 @@ def main(dataframe):
     app.run_server(debug=True)
 
 if __name__ == "__main__":
-    external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+    #external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+    external_stylesheets = [dbc.themes.COSMO, dbc.icons.BOOTSTRAP]
     app = dash.Dash("__main__", external_stylesheets=external_stylesheets)
     main(dataframe = read(config.SCHEMA_FILE, config.DATA_FILE))
