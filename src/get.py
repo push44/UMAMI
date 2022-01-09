@@ -4,7 +4,7 @@ import pickle
 
 import config
 
-r = requests.get(config.URL, auth=(config.USERNAME, config.PASSWORD))
+r = requests.get(config.URL)
 
 if r.status_code == 200:
     text = r.text
