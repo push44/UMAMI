@@ -183,19 +183,18 @@ def return_filter_div():
         children=[
                 html.Div(
                     children=[
+                        html.Div(id="dropdown-container", children=[])
+                    ]
+                ),
+                html.Div(
+                    children=[
                         html.I(
                             id=button_id,
                             className="bi bi-plus-circle-fill",
                             n_clicks=0
                         )
                     ]
-                ),
-                html.Div(
-                    children=[
-                        html.Div(id="dropdown-container", children=[])
-                    ]
                 )
-
             ],
             style={"margin-left":"20px"}
         )
@@ -222,15 +221,7 @@ def return_filter_table(features):
             dash_table.DataTable(
                 id="table-id",
                 columns = [{"name": i, "id": i} for i in features],
-                style_data_conditional=[
-                    {
-                        'if': {
-                            'filter_query': '{{{}}} is blank'.format(col)
-                        },
-                        'backgroundColor': 'tomato',
-                        'color': 'white'
-                    } for col in features[2:]
-                ],
+                style_data_conditional=[],
                 sort_action="native",
                 sort_mode="multi",
                 page_action="native",

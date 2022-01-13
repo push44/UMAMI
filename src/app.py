@@ -144,6 +144,7 @@ def main(dataframe):
     #Update table on click event
     @app.callback(
         Output("table-id", "data"),
+        Output("table-id", "style_data_conditional"),
         Output("download-link", "href"),
         Input("add-filter", "n_clicks"),
         Input({"type": "filter-slider", "index": ALL}, "value"),
@@ -164,7 +165,18 @@ def main(dataframe):
         csv_string = "data:text/csv;charset=utf-8,%EF%BB%BF" + urllib.parse.quote(csv_string)
    
         #filtered_df = filtered_df.sample(frac=1)
-        return filtered_df.to_dict("records"), csv_string
+
+        style_data_condition = [
+                                {
+                        'if': {
+                            'filter_query': '{{{}}} is blank'.format(col)
+                        },
+                        'backgroundColor': 'tomato',
+                        'color': 'white'
+                    } for col in add_filter_features
+        ]
+
+        return filtered_df.to_dict("records"), style_data_condition, csv_string
 
     app.run_server(debug=True)
 
