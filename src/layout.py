@@ -24,7 +24,7 @@ def create_filter_table(dataframe, add_features, bounds):
         set(dataframe.index) - unsatisfied_indices
     )]
     #print(len(unsatisfied_indices))
-    return new_df, list(unsatisfied_indices)
+    return new_df.reset_index(drop=True), list(unsatisfied_indices)
 
 #2) Dropdown menue for scatter plot
 def create_dropdown_div(dropdown_id, features, column, display_name, right_margin="0px"):

@@ -49,16 +49,34 @@ def main(dataframe):
         )
 
         # Category 1: Satisfies filter, records where all filtered attributes are non-null and meet the filter conditions.
-        cat1_df = filtered_df[filtered_df.isnull().sum(axis=1)<1].copy(deep=True)
+        if len(add_filter_features)>0:
+            col_index = {}
+            for col in add_filter_features:
+                col_index[col] = set(filtered_df[filtered_df[col].isnull()==False].index)
+
+            cat1_index = set()
+            for col in col_index:
+                cat1_index.update(col_index[col])
+
+            cat1_df = filtered_df.iloc[list(cat1_index)].copy(deep=True)
+
+            cat3_index = set(filtered_df.index) - cat1_index
+            cat3_df = filtered_df.iloc[list(cat3_index)].copy(deep=True)
+
+        else:
+            cat1_df = filtered_df
+            cat3_df = pd.DataFrame(columns=filtered_df.columns)
         cat1_df["Category:"] = "Satisfies filter"
+        cat3_df["Category:"] = "Filter status unknown"
 
         # Category 2: Does not satisfy filter, records where at least one filtred attributes is non-null and does not meet the corresponding filter conditions.
         cat2_df = dataframe.iloc[unsatisfied_indices].copy(deep=True)
         cat2_df["Category:"] = "Does not satisfies filter"
 
         # Category 3: Filter status unknown, records where all non-null attributes meet the corresponding filtered condition, and where at least one filtered attribute is null.
-        cat3_df = filtered_df[filtered_df.isnull().sum(axis=1)>0].copy(deep=True)
-        cat3_df["Category:"] = "Filter status unknown"
+
+        #cat3_df = filtered_df[filtered_df.isnull().sum(axis=1)>0].copy(deep=True)
+        #cat3_df["Category:"] = "Filter status unknown"
 
         fig = px.scatter(pd.concat([
             cat1_df, cat2_df, cat3_df
