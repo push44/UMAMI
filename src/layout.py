@@ -90,7 +90,7 @@ def create_new_dropdown_div(elem_in_div, dropdown_list):
             html.Div(f"{slider.value}", id={
                     "type": "filter-output-container",
                     "index": elem_in_div
-            })
+            }, style={"padding-left": "40px"})
         ],
         style={"width":"180px"}
     )

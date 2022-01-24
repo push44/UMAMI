@@ -6,6 +6,7 @@ import urllib.parse
 import plotly.express as px
 import numpy as np
 import pandas as pd
+pd.options.mode.chained_assignment = None  # default='warn' Set to None because of False Positive warning for the current use case.
 
 from dash.dependencies import Input
 from dash.dependencies import Output
@@ -49,23 +50,14 @@ def main(dataframe):
         )
 
         # Category 1: Satisfies filter, records where all filtered attributes are non-null and meet the filter conditions.
-        if len(add_filter_features)>0:
-            col_index = {}
-            for col in add_filter_features:
-                col_index[col] = set(filtered_df[filtered_df[col].isnull()==False].index)
+        # Category 3: Filter status unknown, records where all non-null attributes meet the corresponding filtered condition, and where at least one filtered attribute is null.
 
-            cat1_index = set()
-            for col in col_index:
-                cat1_index.update(col_index[col])
+        temp_df = filtered_df.copy(deep=True)
+        temp_df["cat"] = temp_df[add_filter_features].isnull().any(axis=1) # check any of the selected features has null value.
 
-            cat1_df = filtered_df.iloc[list(cat1_index)].copy(deep=True)
-
-            cat3_index = set(filtered_df.index) - cat1_index
-            cat3_df = filtered_df.iloc[list(cat3_index)].copy(deep=True)
-
-        else:
-            cat1_df = filtered_df
-            cat3_df = pd.DataFrame(columns=filtered_df.columns)
+        cat1_df = temp_df[temp_df["cat"] != True]
+        cat3_df = temp_df[temp_df["cat"] == True]
+        
         cat1_df["Category:"] = "Satisfies filter"
         cat3_df["Category:"] = "Filter status unknown"
 
@@ -73,14 +65,16 @@ def main(dataframe):
         cat2_df = dataframe.iloc[unsatisfied_indices].copy(deep=True)
         cat2_df["Category:"] = "Does not satisfies filter"
 
-        # Category 3: Filter status unknown, records where all non-null attributes meet the corresponding filtered condition, and where at least one filtered attribute is null.
-
-        #cat3_df = filtered_df[filtered_df.isnull().sum(axis=1)>0].copy(deep=True)
-        #cat3_df["Category:"] = "Filter status unknown"
-
-        fig = px.scatter(pd.concat([
-            cat1_df, cat2_df, cat3_df
-        ]), x=xaxis_column_name, y=yaxis_column_name, color="Category:")
+        fig = px.scatter(pd.concat([cat1_df,cat2_df,cat3_df]),
+                        x=xaxis_column_name,
+                        y=yaxis_column_name,
+                        color_discrete_map={
+                            "Satisfies filter": "#636EFA",
+                            "Filter status unknown": "#00CC96",
+                            "Does not satisfies filter":"#EF553B"
+                        },
+                        color="Category:"
+                    )
         return fig
 
     ############################################
@@ -98,10 +92,17 @@ def main(dataframe):
     def display_dropdown(add_clicks, remove_clicks, div_children):
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
-
         elm_in_div = len(div_children)
-
+        """
+        d = div_children
+        if len(d)>0:
+            d = d[-1]
+            value = d["props"]["children"][2]["props"]["value"]
+        """
+            
         if triggered_id == "add-filter":
+            if elm_in_div>0:
+                value = div_children[-1]["props"]["children"][2]["props"]["value"]
             new_div_child = create_new_dropdown_div(elm_in_div, dataframe.columns[2:])
             div_children.append(new_div_child)
 
@@ -189,7 +190,7 @@ def main(dataframe):
                         'if': {
                             'filter_query': '{{{}}} is blank'.format(col)
                         },
-                        'backgroundColor': 'tomato',
+                        'backgroundColor': "#00CC96",
                         'color': 'white'
                     } for col in add_filter_features
         ]
