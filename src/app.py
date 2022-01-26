@@ -126,35 +126,25 @@ def main(dataframe):
         Input({"type":"filter-slider", "index": MATCH}, "value"),
         State({"type":"filter-slider", "index": MATCH}, "min"),
         State({"type":"filter-slider", "index": MATCH}, "max"),
-        State({"type":"filter-slider", "index": MATCH}, "value")
+        State({"type":"filter-slider", "index": MATCH}, "value"),
+        prevent_initial_call=True
     )
-    def update_filter_slider_on_variable_selection(column, filter_slider, default_min, default_max, default_value):
+    def update_filter_slider(column, filter_slider, default_min, default_max, default_value):
         ctx = dash.callback_context
 
-        if ctx.triggered:
-            ctx_triggered = ctx.triggered
-            json_triggered = json.loads(ctx_triggered[0]["prop_id"].split(".value")[0])
-            trigger_input_type = json_triggered["type"]
+        ctx_triggered = ctx.triggered
+        json_triggered = json.loads(ctx_triggered[0]["prop_id"].split(".value")[0])
+        trigger_input_type = json_triggered["type"]        
 
-            if trigger_input_type=="filter-dropdown":
-                if column == None:
-                    min = -1000
-                    max = 1000
-                else:
-                    min = dataframe[column].min()
-                    max = dataframe[column].max()
-                slider_value = [min, max]
-
-            else:
-                slider_value = filter_slider
-                min, max = default_min, default_max
-
+        if trigger_input_type=="filter-dropdown":
+            min_val, max_val = dataframe[column].min(), dataframe[column].max()
+            slider_value = [min_val, max_val]
         else:
-            min, max = default_min, default_max
-            slider_value = default_value
+            min_val, max_val = default_min, default_max
+            slider_value = filter_slider
 
         slider_value_display = list(map(lambda val: round(val, 3), slider_value))
-        return min, max, slider_value, f"{slider_value_display}"
+        return min_val, max_val, slider_value, f"{slider_value_display}"
 
     ############################################
     ############## 3)Filter table ##############
