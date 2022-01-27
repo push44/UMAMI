@@ -79,7 +79,7 @@ def create_new_dropdown_div(elem_in_div, dropdown_list):
         },
         min = -1000,
         max = 1000,
-        step = 0.001,
+        step = 0.01,
         value = [-1000, 1000],
         updatemode = "drag"
     )

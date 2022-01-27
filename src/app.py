@@ -1,3 +1,4 @@
+# Add feature 1 then feature 2 then remove feature 1 and add feature 3...then feature 3 fails to update as filter-dropdown is not triggered.
 import config
 import json
 import dash
@@ -93,12 +94,6 @@ def main(dataframe):
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
         elm_in_div = len(div_children)
-        """
-        d = div_children
-        if len(d)>0:
-            d = d[-1]
-            value = d["props"]["children"][2]["props"]["value"]
-        """
             
         if triggered_id == "add-filter":
             if elm_in_div>0:
@@ -121,6 +116,7 @@ def main(dataframe):
         Output({"type":"filter-slider", "index": MATCH}, "min"),
         Output({"type":"filter-slider", "index": MATCH}, "max"),
         Output({"type":"filter-slider", "index": MATCH}, "value"),
+        Output({"type":"filter-slider", "index": MATCH}, "step"),
         Output({"type":"filter-output-container", "index": MATCH}, "children"),
         Input({"type": "filter-dropdown", "index": MATCH}, "value"),
         Input({"type":"filter-slider", "index": MATCH}, "value"),
@@ -143,8 +139,15 @@ def main(dataframe):
             min_val, max_val = default_min, default_max
             slider_value = filter_slider
 
-        slider_value_display = list(map(lambda val: round(val, 3), slider_value))
-        return min_val, max_val, slider_value, f"{slider_value_display}"
+        is_int = all(val.is_integer() for val in dataframe[column].dropna(axis=0))
+        step_val = 1 if is_int else 0.01
+
+        if is_int:
+            slider_value_display = list(map(int, slider_value))
+            
+        else:
+            slider_value_display = list(map(lambda val: round(val, 2), slider_value))
+        return min_val, max_val, slider_value, step_val, f"{slider_value_display}"
 
     ############################################
     ############## 3)Filter table ##############
