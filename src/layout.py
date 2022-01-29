@@ -55,11 +55,11 @@ def make_tooltip(text, tooltip_target, placement="top"):
     )
 
 #3) Dropdown to publish new dropdown to add new filter
-def create_new_dropdown_div(elem_in_div, dropdown_list):
+def create_new_dropdown_div(id_index, dropdown_list):
     """Returns dropdown object indexed according to click event (number of clicks)
     for adding new filter when one is selected"""
     # Remove filter button
-    button_id = {"type": "remove-filter","index": elem_in_div}
+    button_id = {"type": "remove-filter","index": id_index}
     remove_button = html.I(
                         className="bi bi-dash-circle-fill",
                         id = button_id,
@@ -75,7 +75,7 @@ def create_new_dropdown_div(elem_in_div, dropdown_list):
     slider = dcc.RangeSlider(
         id = {
             "type": "filter-slider",
-            "index": elem_in_div
+            "index": id_index
         },
         min = -1000,
         max = 1000,
@@ -89,7 +89,7 @@ def create_new_dropdown_div(elem_in_div, dropdown_list):
             slider,
             html.Div(f"{slider.value}", id={
                     "type": "filter-output-container",
-                    "index": elem_in_div
+                    "index": id_index
             }, style={"padding-left": "40px"})
         ],
         style={"width":"180px"}
@@ -99,7 +99,7 @@ def create_new_dropdown_div(elem_in_div, dropdown_list):
     new_dropdown = dcc.Dropdown(
             id={
                 "type": "filter-dropdown",
-                "index": elem_in_div
+                "index": id_index
             },
             options=[{"label":i, "value":i} for i in dropdown_list],
             style={"width":"175px"},

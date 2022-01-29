@@ -93,12 +93,13 @@ def main(dataframe):
     def display_dropdown(add_clicks, remove_clicks, div_children):
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        elm_in_div = len(div_children)
+        #elm_in_div = len(div_children)
+        id_index = f"{len(div_children)},{add_clicks}"
             
         if triggered_id == "add-filter":
-            if elm_in_div>0:
-                value = div_children[-1]["props"]["children"][2]["props"]["value"]
-            new_div_child = create_new_dropdown_div(elm_in_div, dataframe.columns[2:])
+            #if elm_in_div>0:
+            #    value = div_children[-1]["props"]["children"][2]["props"]["value"]
+            new_div_child = create_new_dropdown_div(id_index, dataframe.columns[2:])
             div_children.append(new_div_child)
 
         elif triggered_id != "add-filter":
