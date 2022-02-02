@@ -93,13 +93,21 @@ def main(dataframe):
     def display_dropdown(add_clicks, remove_clicks, div_children):
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        #elm_in_div = len(div_children)
-        id_index = f"{len(div_children)},{add_clicks}"
-            
+        
+        id_index = add_clicks
+
         if triggered_id == "add-filter":
-            #if elm_in_div>0:
-            #    value = div_children[-1]["props"]["children"][2]["props"]["value"]
-            new_div_child = create_new_dropdown_div(id_index, dataframe.columns[2:])
+
+            elm_in_div = len(div_children)
+            dropdown_menue = dataframe.columns[2:]
+            if elm_in_div>0:
+                values = []
+                for i in range(elm_in_div):
+                    value = div_children[i]["props"]["children"][2]["props"]["value"]
+                    values.append(value)
+                dropdown_menue = [val for val in dropdown_menue if not val in values]
+
+            new_div_child = create_new_dropdown_div(id_index, dropdown_menue)
             div_children.append(new_div_child)
 
         elif triggered_id != "add-filter":
@@ -112,7 +120,7 @@ def main(dataframe):
 
         return div_children
 
-    #2.2) Update filter sliders on variable selection
+    #2.2) Update filter sliders
     @app.callback(
         Output({"type":"filter-slider", "index": MATCH}, "min"),
         Output({"type":"filter-slider", "index": MATCH}, "max"),
