@@ -1,4 +1,3 @@
-# Add feature 1 then feature 2 then remove feature 1 and add feature 3...then feature 3 fails to update as filter-dropdown is not triggered.
 import config
 import json
 import dash
@@ -13,6 +12,7 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
 from dash.dependencies import ALL, MATCH
+from dash import dcc
 
 from read import read
 from layout import create_new_dropdown_div
@@ -37,7 +37,7 @@ def main(dataframe):
         Input("xaxis-column", "value"),
         Input("yaxis-column", "value"),
         Input({"type": "filter-slider", "index": ALL}, "value"),
-        State({"type": "filter-dropdown", "index": ALL}, "value")
+        State({"type": "filter-dropdown", "index": ALL}, "value"),
     )
     def update_scatter_plot(xaxis_column_name, yaxis_column_name, filter_slider, filter_dropdown):
 
@@ -166,10 +166,10 @@ def main(dataframe):
     @app.callback(
         Output("table-id", "data"),
         Output("table-id", "style_data_conditional"),
-        Output("download-link", "href"),
         Input("add-filter", "n_clicks"),
         Input({"type": "filter-slider", "index": ALL}, "value"),
-        State({"type": "filter-dropdown", "index": ALL}, "value")
+        State({"type": "filter-dropdown", "index": ALL}, "value"),
+        prevent_initial_call=True
     )
     def on_add_click(add_filter_n_clicks, filter_slider, filter_dropdown):
 
@@ -182,11 +182,6 @@ def main(dataframe):
             selected_bounds
         )
 
-        csv_string = filtered_df.to_csv(index=False, encoding="utf-8")
-        csv_string = "data:text/csv;charset=utf-8,%EF%BB%BF" + urllib.parse.quote(csv_string)
-   
-        #filtered_df = filtered_df.sample(frac=1)
-
         style_data_condition = [
                                 {
                         'if': {
@@ -197,7 +192,16 @@ def main(dataframe):
                     } for col in add_filter_features
         ]
 
-        return filtered_df.to_dict("records"), style_data_condition, csv_string
+        return filtered_df.to_dict("records"), style_data_condition
+
+    @app.callback(
+        Output("download-dataframe-csv", "data"),
+        Input("btn_csv", "n_clicks"),
+        State("table-id", "data"),
+        prevent_initial_call=True,
+    )
+    def download_button(n_clicks, data):
+        return dcc.send_data_frame(pd.DataFrame(data).to_csv, "data.csv")
 
     app.run_server(debug=True)
 

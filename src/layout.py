@@ -214,13 +214,21 @@ def return_filter_div():
             style={"width":"500px", "overflow":"scroll", "border":"2px black solid"}
     )
 
-#4) Table after filters
-def return_filter_table(features):
+#4) Table header div
+def return_table_header():
+    return html.H2(
+                children="Sample Table",
+                style={"text-align":"center"}
+            )
+
+#5) Table after filters
+def return_filter_table(dataframe):
     table_object = html.Div(
         children=[
             dash_table.DataTable(
                 id="table-id",
-                columns = [{"name": i, "id": i} for i in features],
+                columns = [{"name": i, "id": i} for i in dataframe.columns],
+                data = dataframe.to_dict("records"),
                 style_data_conditional=[],
                 sort_action="native",
                 sort_mode="multi",
@@ -233,27 +241,21 @@ def return_filter_table(features):
     )
 
     return html.Div(
-        children=[
-            html.H2(
-                children="Sample Table",
-                style={"text-align":"center"}
-            ),
-            table_object
+        children = [table_object],
+        style = {"margin-top":"20px"}
+    )
+
+#6) Table download button
+def return_download_button():
+    return html.Div(
+        [
+            html.Button("Download CSV", id="btn_csv"),
+            dcc.Download(id="download-dataframe-csv"),
         ],
-        style={"width":"1200px"}
+        style={"text-align":"center"}
     )
 
-#5) Table download link
-def return_download_link():
-    return html.A(
-        "Download Data",
-        id = "download-link",
-        download = "rawdata.csv",
-        href = "",
-        target = "_blank"
-    )
-
-#6) Top half of page
+#7) Top half of page
 def return_top_half_divs(div1, div2):
     return html.Div(
         children= [
@@ -263,12 +265,17 @@ def return_top_half_divs(div1, div2):
         style={"display":"inline-flex", "height":"580px", "width":"1300px"}
     )
 
-#7) Bottom half of page
-def return_bottom_half_divs(div1, div2):
+#8) Bottom half of page
+def return_bottom_half_divs(header_div, button, table_div):
     return html.Div(
         children= [
-            div1,
-            div2
+            html.Div(
+                children = [
+                    header_div,
+                    button
+                ]
+            ),
+            table_div
         ],
         style={"height":"500px", "width":"1300px", "margin-top":"50px"}
     )
@@ -290,28 +297,31 @@ def create_layout(df):
     scatter_plot_div = return_scatter_plot_div(features[2:])
     #3) Add Filters
     filter_div = return_filter_div()
-    #4) Table after filters
-    table_div = return_filter_table(features)
-    #5) Download Data Reference Link
-    download_link_object = return_download_link()
+    #4) Table header div
+    table_header_div = return_table_header()
+    #5) Table after filters
+    table_div = return_filter_table(df)
+    #6) Download Data Button
+    download_data_object = return_download_button()
 
     ######################################################
     ################## Page Arrangement ##################
     ######################################################
 
-    #6) Top half of page
+    #7) Top half of page
     top_half_div = return_top_half_divs(
         filter_div,
         scatter_plot_div
     )
 
-    #7) Bottom half of page
+    #8) Bottom half of page
     bottom_half_div = return_bottom_half_divs(
+        table_header_div,
+        download_data_object,
         table_div,
-        download_link_object
     )
 
-    #8) Full page
+    #9) Full page
     page_div = html.Div(
         children=[
             top_half_div,
