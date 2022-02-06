@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn' Set to None because of False Positive warning for the current use case.
 
+from math import ceil, floor
 from dash.dependencies import Input
 from dash.dependencies import Output
 from dash.dependencies import State
@@ -149,20 +150,23 @@ def main(dataframe):
             slider_value = filter_slider
 
         is_int = all(val.is_integer() for val in dataframe[column].dropna(axis=0))
-        step_val = 1 if is_int else 0.01
+        step_val = 1
 
         if is_int:
             slider_value_display = list(map(int, slider_value))
-            
-        else:
-            slider_value_display = list(map(lambda val: round(val, 2), slider_value))
+
+        if not is_int:
+            step_val = 0.000001
+            slider_value[-1] = ceil(slider_value[-1] * 100000) / 100000 #round up to 5 decimal places
+            slider_value[0] = floor(slider_value[0] * 100000) / 100000 #round down to 5 decimal places
+            slider_value_display = slider_value
         return min_val, max_val, slider_value, step_val, f"{slider_value_display}"
 
     ############################################
     ############## 3)Filter table ##############
     ############################################
 
-    #Update table on click event
+    #Update table on click event/ slider change
     @app.callback(
         Output("table-id", "data"),
         Output("table-id", "style_data_conditional"),
@@ -171,11 +175,10 @@ def main(dataframe):
         State({"type": "filter-dropdown", "index": ALL}, "value"),
         prevent_initial_call=True
     )
-    def on_add_click(add_filter_n_clicks, filter_slider, filter_dropdown):
+    def apply_filter(add_filter_n_clicks, filter_slider, filter_dropdown):
 
         add_filter_features = list(filter(lambda val: val!=None, filter_dropdown))
         selected_bounds = np.array(filter_slider).reshape(-1, 2)
-
         filtered_df, _ = create_filter_table(
             dataframe,
             add_filter_features,
