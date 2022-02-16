@@ -7,10 +7,12 @@ import dash_bootstrap_components as dbc
 
 #################### Helper Functions ####################
 
-#1) Filter table after add-filter
+#1) Display table after add-filter
 def create_filter_table(dataframe, add_features, bounds):
-    """Returns filtered pandas dataframe"""
+    """Returns filtered pandas dataframe."""
     #dataframe = dataframe.fillna('N/A').replace('', 'N/A')
+
+    # find indices of rows that unsatisfies bounds
     unsatisfied_indices = set()
     # Iterate over features to be added
     for ind, feat in enumerate(add_features):
@@ -20,6 +22,7 @@ def create_filter_table(dataframe, add_features, bounds):
             set(dataframe[(dataframe[feat]<lb) | (dataframe[feat]>ub)].index.tolist())
         )
     
+    # dataframe with satified rows
     new_df = dataframe.iloc[list(
         set(dataframe.index) - unsatisfied_indices
     )]
@@ -28,7 +31,7 @@ def create_filter_table(dataframe, add_features, bounds):
 
 #2) Dropdown menue for scatter plot
 def create_dropdown_div(dropdown_id, features, column, display_name, right_margin="0px"):
-    """Return dropdown menue"""
+    """Return dropdown menue."""
     return html.Div(
             children=[
                         html.H5(
@@ -47,6 +50,7 @@ def create_dropdown_div(dropdown_id, features, column, display_name, right_margi
             style = {"display":"flex", "margin-right":right_margin}
         )
 
+#3) Create tooltip
 def make_tooltip(text, tooltip_target, placement="top"):
     return dbc.Tooltip(
         text,
@@ -54,10 +58,10 @@ def make_tooltip(text, tooltip_target, placement="top"):
         placement=placement,
     )
 
-#3) Dropdown to publish new dropdown to add new filter
+#4) Publish new dropdown
 def create_new_dropdown_div(id_index, dropdown_list):
-    """Returns dropdown object indexed according to click event (number of clicks)
-    for adding new filter when one is selected"""
+    """Returns dropdown div with remove button, tooltip for remove button, slider value, and dropdown menue iteself indexed on click event (number of clicks)."""
+
     # Remove filter button
     button_id = {"type": "remove-filter","index": id_index}
     remove_button = html.I(
@@ -84,6 +88,7 @@ def create_new_dropdown_div(id_index, dropdown_list):
         updatemode = "drag"
     )
 
+    # Slider div with range slider and slider display values
     slider_div = html.Div(
         children = [
             slider,
@@ -132,6 +137,7 @@ def return_header():
 
 #2) Scatter plot
 def return_scatter_plot_div(features):
+    """Returns scatter plot div with scatter plot header, dropdown div (x-axis and y-axis dropdown menues), and actual scatter plot via graph object."""
 
     # x dropdown div
     x_dropdown_div = create_dropdown_div(
@@ -178,6 +184,7 @@ def return_scatter_plot_div(features):
 
 #3) Filter div
 def return_filter_div():
+    """Returns filter div with dropdown container (that can contain multiple filter dropdown divs) and add filter button (with it's tooltip) at the bottom."""
     button_id = "add-filter"
     add_filter_div = html.Div(
         children=[
@@ -216,6 +223,7 @@ def return_filter_div():
 
 #4) Table header div
 def return_table_header():
+    """Returns a display filter table header."""
     return html.H2(
                 children="Sample Table",
                 style={"text-align":"center"}
@@ -223,6 +231,7 @@ def return_table_header():
 
 #5) Table after filters
 def return_filter_table(dataframe):
+    """Returns a display filter table."""
     table_object = html.Div(
         children=[
             dash_table.DataTable(
@@ -247,6 +256,7 @@ def return_filter_table(dataframe):
 
 #6) Table download button
 def return_download_button():
+    """Returns a download button."""
     return html.Div(
         [
             html.Button("Download CSV", id="btn_csv"),
@@ -257,6 +267,7 @@ def return_download_button():
 
 #7) Top half of page
 def return_top_half_divs(div1, div2):
+    """Return a top half div."""
     return html.Div(
         children= [
             div1,
@@ -267,6 +278,7 @@ def return_top_half_divs(div1, div2):
 
 #8) Bottom half of page
 def return_bottom_half_divs(header_div, button, table_div):
+    """Return a bottom half div with table header div, download button, and table div."""
     return html.Div(
         children= [
             html.Div(

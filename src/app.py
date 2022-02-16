@@ -20,7 +20,7 @@ from layout import create_new_dropdown_div
 from layout import create_layout
 from layout import create_filter_table
 
-def main(dataframe):
+def callback_func(dataframe):
 
     # Drop rows having all attributes: null
     dataframe.dropna(axis=0, how="all", inplace=True)
@@ -35,16 +35,21 @@ def main(dataframe):
     #Update scatter plot
     @app.callback(
         Output("indicator-graphic", "figure"),
+
         Input("xaxis-column", "value"),
         Input("yaxis-column", "value"),
         Input({"type": "filter-slider", "index": ALL}, "value"),
+
         State({"type": "filter-dropdown", "index": ALL}, "value"),
     )
     def update_scatter_plot(xaxis_column_name, yaxis_column_name, filter_slider, filter_dropdown):
 
+        # List all selected features
         add_filter_features = list(filter(lambda val: val!=None, filter_dropdown))
+        # List all choosen filter bounds
         selected_bounds = np.array(filter_slider).reshape(-1, 2)
 
+        # get filter dataframe and indices of unsatisfied data points
         filtered_df, unsatisfied_indices = create_filter_table(
             dataframe,
             add_filter_features,
@@ -83,22 +88,24 @@ def main(dataframe):
     ################# 2)Filter #################
     ############################################
 
-    #2.1) Publish default filter on click event
+    #2.1) Publish default filter on add click event and remove filter on remove click event
     @app.callback(
         Output("dropdown-container", "children"),
+
         [Input("add-filter", "n_clicks"),
         Input({"type":"remove-filter", "index":ALL}, "n_clicks")],
+
         [State("dropdown-container", "children")],
         prevent_initial_call=True
     )
     def display_dropdown(add_clicks, remove_clicks, div_children):
-        ctx = dash.callback_context
+        ctx = dash.callback_context # determining which input has fired (https://dash.plotly.com/advanced-callbacks)
+
+        # extract fired input name
         triggered_id = ctx.triggered[0]["prop_id"].split(".")[0]
-        
-        id_index = add_clicks
 
         if triggered_id == "add-filter":
-
+            # publish new dropdown
             elm_in_div = len(div_children)
             dropdown_menue = dataframe.columns[2:]
             if elm_in_div>0:
@@ -106,12 +113,16 @@ def main(dataframe):
                 for i in range(elm_in_div):
                     value = div_children[i]["props"]["children"][2]["props"]["value"]
                     values.append(value)
+
+                # dropdown menue do not contain features that are previously selected
                 dropdown_menue = [val for val in dropdown_menue if not val in values]
 
-            new_div_child = create_new_dropdown_div(id_index, dropdown_menue)
+            # add new dropdown
+            new_div_child = create_new_dropdown_div(add_clicks, dropdown_menue)
             div_children.append(new_div_child)
 
         elif triggered_id != "add-filter":
+            # remove filter
             for idx, val in enumerate(remove_clicks):
                 if val is not None:
                     #print(f"All the remove buttons: {remove_clicks}")
@@ -128,38 +139,48 @@ def main(dataframe):
         Output({"type":"filter-slider", "index": MATCH}, "value"),
         Output({"type":"filter-slider", "index": MATCH}, "step"),
         Output({"type":"filter-output-container", "index": MATCH}, "children"),
-        Input({"type": "filter-dropdown", "index": MATCH}, "value"),
+
+        Input({"type":"filter-dropdown", "index": MATCH}, "value"),
         Input({"type":"filter-slider", "index": MATCH}, "value"),
+
         State({"type":"filter-slider", "index": MATCH}, "min"),
         State({"type":"filter-slider", "index": MATCH}, "max"),
         State({"type":"filter-slider", "index": MATCH}, "value"),
         prevent_initial_call=True
     )
     def update_filter_slider(column, filter_slider, default_min, default_max, default_value):
-        ctx = dash.callback_context
+        ctx = dash.callback_context # determining which input has fired (https://dash.plotly.com/advanced-callbacks)
 
+        # extract fired input name
         ctx_triggered = ctx.triggered
         json_triggered = json.loads(ctx_triggered[0]["prop_id"].split(".value")[0])
         trigger_input_type = json_triggered["type"]        
 
         if trigger_input_type=="filter-dropdown":
+            # if new feature is selected then publish minimum and maximum bounds
             min_val, max_val = dataframe[column].min(), dataframe[column].max()
             slider_value = [min_val, max_val]
+
         else:
+            # if feature is already selected then keep bounds unchanged
             min_val, max_val = default_min, default_max
+            # change slider values
             slider_value = filter_slider
 
         is_int = all(val.is_integer() for val in dataframe[column].dropna(axis=0))
-        step_val = 1
 
         if is_int:
+            # if selected feature is integer type then update slider step value
+            step_val = 1
+            # display integer values
             slider_value_display = list(map(int, slider_value))
 
         if not is_int:
-            step_val = 0.000001
+            step_val = 0.000001 # selected values from trial and error to overcome rounding issues
             slider_value[-1] = ceil(slider_value[-1] * 100000) / 100000 #round up to 5 decimal places
             slider_value[0] = floor(slider_value[0] * 100000) / 100000 #round down to 5 decimal places
             slider_value_display = slider_value
+
         return min_val, max_val, slider_value, step_val, f"{slider_value_display}"
 
     ############################################
@@ -170,8 +191,10 @@ def main(dataframe):
     @app.callback(
         Output("table-id", "data"),
         Output("table-id", "style_data_conditional"),
+
         Input("add-filter", "n_clicks"),
         Input({"type": "filter-slider", "index": ALL}, "value"),
+
         State({"type": "filter-dropdown", "index": ALL}, "value"),
         prevent_initial_call=True
     )
@@ -179,12 +202,15 @@ def main(dataframe):
 
         add_filter_features = list(filter(lambda val: val!=None, filter_dropdown))
         selected_bounds = np.array(filter_slider).reshape(-1, 2)
+
+        # received filtered dataframe
         filtered_df, _ = create_filter_table(
             dataframe,
             add_filter_features,
             selected_bounds
         )
 
+        # update style data condition for sample display table (rows containing missing values in the selected features are highlighted in the sample display table)
         style_data_condition = [
                                 {
                         'if': {
@@ -197,19 +223,28 @@ def main(dataframe):
 
         return filtered_df.to_dict("records"), style_data_condition
 
+    #############################################
+    ############# 4)Download button #############
+    #############################################
+
     @app.callback(
         Output("download-dataframe-csv", "data"),
+
         Input("btn_csv", "n_clicks"),
+
         State("table-id", "data"),
         prevent_initial_call=True,
     )
     def download_button(n_clicks, data):
         return dcc.send_data_frame(pd.DataFrame(data).to_csv, "data.csv")
 
+    # Change debug mode
     app.run_server(debug=True)
 
 if __name__ == "__main__":
     #external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     external_stylesheets = [dbc.themes.COSMO, dbc.icons.BOOTSTRAP]
+
     app = dash.Dash("__main__", external_stylesheets=external_stylesheets)
-    main(dataframe = read(config.SCHEMA_FILE, config.DATA_FILE))
+
+    callback_func(dataframe = read(config.SCHEMA_FILE, config.DATA_FILE))
