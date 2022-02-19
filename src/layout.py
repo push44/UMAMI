@@ -172,14 +172,14 @@ def return_scatter_plot_div(features):
 
     return html.Div(
             children=[
-                html.H2(
+                html.H3(
                     children = "Scatter Plot",
                     style={"text-align":"center"}
                 ),
                 dropdown_div,
                 graph_object
             ],
-            style={"width":"800px", "align-content":"center", "border":"2px black solid"}
+            style={"width":"800px", "align-content":"center"}
     )
 
 #3) Filter div
@@ -211,20 +211,20 @@ def return_filter_div():
 
     return html.Div(
             children=[
-                html.H2(
+                html.H3(
                     children="Add Filters",
                     style={"text-align":"center"}
                 ),
                 add_filter_div,
                 add_button_tooltip
             ],
-            style={"width":"500px", "overflow":"scroll", "border":"2px black solid"}
+            style={"width":"500px", "overflow":"scroll", "margin-left":"20px"}
     )
 
 #4) Table header div
 def return_table_header():
     """Returns a display filter table header."""
-    return html.H2(
+    return html.H3(
                 children="Sample Table",
                 style={"text-align":"center"}
             )
@@ -273,7 +273,7 @@ def return_top_half_divs(div1, div2):
             div1,
             div2
         ],
-        style={"display":"inline-flex", "height":"580px", "width":"1300px"}
+        style={"display":"inline-flex", "height":"580px", "width":"1300px", "margin-top":"20px"}
     )
 
 #8) Bottom half of page
@@ -289,7 +289,7 @@ def return_bottom_half_divs(header_div, button, table_div):
             ),
             table_div
         ],
-        style={"height":"500px", "width":"1300px", "margin-top":"50px"}
+        style={"height":"500px", "width":"1300px"}
     )
 ####################### Page layout #######################
 

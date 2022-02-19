@@ -245,6 +245,8 @@ if __name__ == "__main__":
     #external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
     external_stylesheets = [dbc.themes.COSMO, dbc.icons.BOOTSTRAP]
 
-    app = dash.Dash("__main__", external_stylesheets=external_stylesheets)
+    app = dash.Dash("__main__", external_stylesheets=external_stylesheets, meta_tags=[
+        {"name": "viewport", "content": "width=device-width, initial-scale=1"}
+    ])
 
     callback_func(dataframe = read(config.SCHEMA_FILE, config.DATA_FILE))
